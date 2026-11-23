@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Arise">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Arise</title>
+<style>
+:root {
+  --bg: #05070d; --panel: #0a1120; --panel2: #0e182b; --line: #1a2a44; --glow: #4fc3ff;
+  --text: #dfe8f5; --dim: #7c8aa0; --mute: #4c5a70; --good: #3ddc97; --bad: #ff5d6c; --gold: #ffcf5c;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Roboto Mono", monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--sans); }
+body { min-height: 100dvh; padding-bottom: calc(70px + env(safe-area-inset-bottom)); -webkit-font-smoothing: antialiased;
+  background: radial-gradient(1200px 500px at 50% -200px, #0d2140 0%, var(--bg) 60%) fixed; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+main { max-width: 640px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px 16px; }
+.tab { display: none; }
+.tab.on { display: block; animation: fade .25s ease-out; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } }
+
+/* system window */
+.win { position: relative; background: linear-gradient(180deg, rgba(14,24,43,.92), rgba(8,14,26,.92)); border: 1px solid #2a4a74;
+  border-radius: 14px; padding: 14px; margin-bottom: 14px; box-shadow: 0 0 0 1px rgba(79,195,255,.06), 0 0 24px rgba(79,195,255,.08) inset; }
+.win h2 { font-size: 11px; letter-spacing: .28em; color: var(--glow); font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.win h2 .r { margin-left: auto; color: var(--dim); letter-spacing: .08em; font-weight: 400; font-family: var(--mono); }
+.sub { color: var(--dim); font-size: 12px; }
+
+/* hunter card */
+.hunter { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+.rank { width: 74px; height: 74px; border-radius: 16px; display: grid; place-items: center; font-size: 40px; font-weight: 800;
+  border: 2px solid currentColor; text-shadow: 0 0 16px currentColor; box-shadow: 0 0 18px -4px currentColor inset; }
+.name { font-size: 16px; font-weight: 700; }
+.lvl { font-family: var(--mono); font-size: 13px; color: var(--dim); margin-top: 2px; }
+.lvl b { color: var(--text); font-size: 18px; }
+.bar { height: 8px; background: #0b1626; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, #2a78d6, var(--glow)); box-shadow: 0 0 10px var(--glow); border-radius: 99px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.chip { font-size: 12px; padding: 5px 10px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--line); font-family: var(--mono); }
+.chip.hot { border-color: #ff8a3d; color: #ffb27a; }
+.chip.warn { border-color: #c98500; color: var(--gold); }
+.chip.red { border-color: var(--bad); color: var(--bad); }
+
+/* day nav + quests */
+.daynav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.daynav button { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; width: 36px; height: 34px; }
+.daynav button:disabled { opacity: .3; }
+.daynav .d { flex: 1; text-align: center; font-weight: 600; font-size: 14px; }
+.daynav .d small { display: block; color: var(--dim); font-weight: 400; font-size: 11px; font-family: var(--mono); }
+.quest { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 12px; margin-bottom: 8px; transition: transform .12s, border-color .2s, background .2s; position: relative; }
+.quest:active { transform: scale(.98); }
+.quest .ic { font-size: 22px; width: 30px; text-align: center; }
+.quest .t { flex: 1; }
+.quest .t b { display: block; font-size: 15px; font-weight: 600; }
+.quest .t span { font-size: 11px; color: var(--dim); font-family: var(--mono); letter-spacing: .06em; }
+.quest .box { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--mute); display: grid; place-items: center; transition: all .2s; }
+.quest.done { border-color: var(--qc); background: color-mix(in srgb, var(--qc) 12%, var(--panel2)); }
+.quest.done .box { background: var(--qc); border-color: var(--qc); box-shadow: 0 0 12px var(--qc); }
+.quest.done .box::after { content: ""; width: 7px; height: 12px; border: solid #fff; border-width: 0 3px 3px 0; transform: rotate(45deg) translate(-1px,-1px); }
+.dayfoot { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.grade { font-size: 30px; font-weight: 800; width: 46px; text-align: center; }
+.dayfoot .sub b { color: var(--text); }
+.float { position: fixed; pointer-events: none; font-weight: 800; color: var(--glow); text-shadow: 0 0 10px var(--glow); font-family: var(--mono);
+  animation: up 1s ease-out forwards; z-index: 50; }
+@keyframes up { to { transform: translateY(-60px); opacity: 0; } }
+
+/* overlay */
+#ov { position: fixed; inset: 0; background: rgba(2,5,12,.82); display: none; place-items: center; z-index: 60; backdrop-filter: blur(4px); }
+#ov.on { display: grid; }
+#ov .win { width: min(86vw, 360px); text-align: center; padding: 26px 18px; animation: pop .45s cubic-bezier(.2,1.4,.4,1); }
+#ov .big { font-size: 34px; font-weight: 800; letter-spacing: .08em; color: var(--glow); text-shadow: 0 0 22px var(--glow); margin: 6px 0; }
+#ov p { color: var(--dim); font-size: 14px; margin-bottom: 18px; }
+@keyframes pop { from { transform: scale(.7); opacity: 0; } }
+.btn { background: var(--panel2); border: 1px solid #2a4a74; border-radius: 10px; padding: 9px 14px; font-size: 14px; }
+.btn.pri { background: #12365e; border-color: var(--glow); color: #fff; }
+.btn.red { border-color: var(--bad); color: var(--bad); }
+
+/* toast */
+#toast { position: fixed; left: 50%; top: max(12px, env(safe-area-inset-top)); transform: translate(-50%, calc(-100% - 40px)); transition: transform .35s;
+  z-index: 70; background: #0b1730; border: 1px solid var(--glow); color: var(--text); padding: 10px 14px; border-radius: 10px;
+  font-size: 13px; box-shadow: 0 0 20px rgba(79,195,255,.25); max-width: 92vw; }
+#toast.on { transform: translate(-50%, 0); }
+#toast b { color: var(--glow); font-family: var(--mono); letter-spacing: .1em; margin-right: 6px; }
+
+/* charts */
+.ranges { display: flex; gap: 6px; margin-bottom: 14px; position: sticky; top: 0; z-index: 5; padding: 8px 0; background: var(--bg); }
+.ranges button { flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 9px; padding: 7px 0; font-size: 12px; font-family: var(--mono); color: var(--dim); }
+.ranges button.on { border-color: var(--glow); color: var(--text); background: #10284a; }
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart text { fill: var(--dim); font-size: 10px; font-family: var(--mono); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; font-size: 11px; color: var(--dim); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.kpi { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.kpi b { display: block; font-size: 20px; font-family: var(--mono); }
+.kpi span { font-size: 10px; color: var(--dim); letter-spacing: .1em; text-transform: uppercase; }
+#tip { position: fixed; z-index: 40; pointer-events: none; background: #0b1730; border: 1px solid #2a4a74; border-radius: 8px; padding: 7px 9px;
+  font-size: 12px; display: none; max-width: 220px; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+#tip .h { color: var(--dim); font-family: var(--mono); font-size: 11px; margin-bottom: 3px; }
+#tip .row { display: flex; gap: 6px; align-items: center; }
+#tip .row i { width: 8px; height: 8px; border-radius: 2px; }
+table.st { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.st td, table.st th { padding: 7px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+table.st th { color: var(--dim); font-weight: 400; font-size: 11px; }
+table.st td:first-child, table.st th:first-child { text-align: left; }
+
+/* awards */
+.aw { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.ach { background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.ach .e { font-size: 22px; }
+.ach b { display: block; font-size: 13px; margin-top: 4px; }
+.ach span { font-size: 11px; color: var(--dim); }
+.ach.lock { opacity: .45; filter: grayscale(1); }
+.ach .bar { height: 5px; margin-top: 6px; }
+
+/* settings */
+.field { display: block; margin-bottom: 10px; }
+.field span { display: block; font-size: 11px; color: var(--dim); margin-bottom: 4px; letter-spacing: .08em; }
+.field input, .field select, .qrow input, .qrow select { width: 100%; background: #08101e; border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; font-size: 16px; }
+.qrow { display: grid; grid-template-columns: 52px 1fr 90px 36px; gap: 6px; margin-bottom: 8px; align-items: center; }
+.qrow input.ic { text-align: center; }
+.qrow button { background: none; border: 1px solid var(--line); border-radius: 9px; height: 40px; color: var(--bad); }
+.row2 { display: flex; gap: 8px; flex-wrap: wrap; }
+.syncdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--mute); margin-right: 6px; }
+.syncdot.ok { background: var(--good); box-shadow: 0 0 8px var(--good); }
+.syncdot.bad { background: var(--bad); }
+
+/* tab bar */
+nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: rgba(5,7,13,.94); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom); backdrop-filter: blur(10px); z-index: 30; }
+nav button { flex: 1; background: none; border: 0; padding: 9px 0 10px; color: var(--mute); font-size: 10px; letter-spacing: .12em; }
+nav button .i { display: block; font-size: 20px; margin-bottom: 2px; filter: grayscale(1); opacity: .6; }
+nav button.on { color: var(--glow); }
+nav button.on .i { filter: none; opacity: 1; }
+.penalty { border-color: var(--bad); box-shadow: 0 0 24px rgba(255,93,108,.15) inset; }
+.penalty h2 { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <!-- TODAY -->
+  <section class="tab on" id="t-today">
+    <div class="win" id="card"></div>
+    <div id="penalty"></div>
+    <div class="win">
+      <h2>⚔ DAILY QUESTS <span class="r" id="reset"></span></h2>
+      <div class="daynav">
+        <button id="prev" aria-label="Previous day">‹</button>
+        <div class="d" id="dlabel"></div>
+        <button id="next" aria-label="Next day">›</button>
+      </div>
+      <div id="quests"></div>
+      <div class="dayfoot"><div class="grade" id="grade"></div><div class="sub" id="dayinfo"></div></div>
+    </div>
+    <div class="win"><h2>🧬 STATS</h2><div class="chart" id="c-radar"></div></div>
+  </section>
+
+  <!-- GRAPHS -->
+  <section class="tab" id="t-graphs">
+    <div class="ranges" id="ranges">
+      <button data-r="30">30D</button><button data-r="90" class="on">90D</button><button data-r="365">1Y</button><button data-r="0">ALL</button>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="win"><h2>📈 XP GROWTH</h2><div class="chart" id="c-xp"></div></div>
+    <div class="win"><h2>⚔ QUESTS PER DAY <span class="r" id="perday-note"></span></h2><div class="chart" id="c-bars"></div><div class="legend" id="lg-bars"></div></div>
+    <div class="win"><h2>🗓 CONSISTENCY <span class="r">12 months · tap a day</span></h2><div class="chart" id="c-heat" style="overflow-x:auto;-webkit-overflow-scrolling:touch"></div></div>
+    <div class="win"><h2>🎯 COMPLETION RATE</h2><div class="chart" id="c-rate"></div></div>
+    <div class="win"><h2>📆 WEEKDAY RHYTHM <span class="r">avg quests</span></h2><div class="chart" id="c-week"></div></div>
+    <div class="win"><h2>🏅 DAY GRADES</h2><div class="chart" id="c-grades"></div></div>
+  </section>
+
+  <!-- AWARDS -->
+  <section class="tab" id="t-awards">
+    <div class="win"><h2>🔥 STREAKS <span class="r">4+ quests = day kept</span></h2><table class="st" id="streaks"></table></div>
+    <div class="win"><h2>🏆 TITLES</h2><div class="aw" id="awards"></div></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="tab" id="t-set">
+    <div class="win"><h2>🧑 HUNTER</h2>
+      <label class="field"><span>NAME</span><input id="p-name" maxlength="40"></label>
+      <label class="field"><span>GOAL</span><input id="p-goal" maxlength="120"></label>
+      <label class="field"><span>GOAL DEADLINE</span><input id="p-dl" type="date"></label>
+      <button class="btn pri" id="p-save">Save profile</button>
+    </div>
+    <div class="win"><h2>⚔ QUESTS <span class="r">removed quests keep their history</span></h2>
+      <div id="qedit"></div>
+      <div class="row2"><button class="btn" id="q-add">+ Add quest</button><button class="btn pri" id="q-save">Save quests</button></div>
+    </div>
+    <div class="win"><h2>☁ SYNC</h2>
+      <p class="sub" id="syncinfo" style="margin-bottom:10px"></p>
+      <label class="field"><span>SETUP CODE (from the server's /hunter page)</span><input id="s-code" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <div class="row2"><button class="btn pri" id="s-save">Connect</button><button class="btn" id="s-now">Sync now</button><button class="btn red" id="s-off">Disconnect</button></div>
+    </div>
+    <div class="win"><h2>💾 BACKUP</h2>
+      <p class="sub" style="margin-bottom:10px">Your data lives on this phone. Export a copy now and then.</p>
+      <div class="row2"><button class="btn" id="b-exp">Export</button><label class="btn">Import<input type="file" id="b-imp" accept="application/json,.json" hidden></label></div>
+    </div>
+  </section>
+</main>
+
+<nav id="nav">
+  <button data-t="today" class="on"><span class="i">⚔️</span>QUESTS</button>
+  <button data-t="graphs"><span class="i">📈</span>GRAPHS</button>
+  <button data-t="awards"><span class="i">🏆</span>TITLES</button>
+  <button data-t="set"><span class="i">⚙️</span>SYSTEM</button>
+</nav>
+<div id="ov"></div>
+<div id="toast"></div>
+<div id="tip"></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const COLORS = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#0ca30c", "#9085e9", "#e66767"];
+const HEAT = ["#0f1b2e", "#184f95", "#256abf", "#3987e5", "#6da7ec", "#b7d3f6"];
+const STATS = ["STR", "VIT", "INT", "SENSE", "WIS", "WILL"];
+const RANKS = [["S", 60, "#ffcf5c"], ["A", 45, "#ff6b8a"], ["B", 30, "#b18cff"], ["C", 20, "#4fc3ff"], ["D", 10, "#3ddc97"], ["E", 1, "#9aa7ba"]];
+const GRADE_COL = { S: "#ffcf5c", A: "#ff8a3d", B: "#4fc3ff", C: "#9aa7ba", D: "#c98500", F: "#ff5d6c" };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- storage ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const DEFAULT = {
+  profile: { name: "Hunter", goal: "", deadline: "", since: "" },
+  quests: [
+    { id: "workout", name: "Workout", icon: "💪", stat: "STR", color: 0 },
+    { id: "eat", name: "Eat clean", icon: "🥗", stat: "VIT", color: 1 },
+    { id: "study", name: "Study", icon: "📚", stat: "INT", color: 2 },
+    { id: "meditate", name: "Meditate", icon: "🧘", stat: "SENSE", color: 3 },
+    { id: "read", name: "Read", icon: "📖", stat: "WIS", color: 4 },
+    { id: "discipline", name: "Discipline", icon: "🛡️", stat: "WILL", color: 5 },
+  ],
+  days: {},
+};
+let base = store.get("hunter-data", null) || structuredClone(DEFAULT);   // last copy the server confirmed
+let pending = store.get("hunter-pending", []);                              // changes not yet synced
+let syncCfg = store.get("hunter-sync", null);                               // {k, t, url}
+let D;                                                                      // base + pending, what we show
+
+function applyOp(data, op) {
+  if (op.op === "tick") {
+    if (!data.quests.some(q => q.id === op.q)) return;
+    const s = new Set(data.days[op.d] || []);
+    op.v ? s.add(op.q) : s.delete(op.q);
+    if (s.size) data.days[op.d] = [...s].sort(); else delete data.days[op.d];
+  } else if (op.op === "quests") data.quests = op.quests;
+  else if (op.op === "profile") data.profile = { ...op, since: data.profile.since || "" }, delete data.profile.op;
+}
+function rebuild() { D = structuredClone(base); pending.forEach(op => applyOp(D, op)); }
+function change(op) {
+  pending.push(op); store.set("hunter-pending", pending);
+  applyOp(D, op); scheduleSync();
+}
+
+/* ---------- dates ---------- */
+const pad = n => String(n).padStart(2, "0");
+const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (k, n) => { const d = parse(k); d.setDate(d.getDate() + n); return key(d); };
+const today = () => key(new Date());
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const nice = k => { const d = parse(k); return `${WD[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`; };
+
+/* ---------- game rules ---------- */
+const xpFor = L => 25 * (L - 1) * (L - 1);                    // total XP to reach level L
+const levelOf = xp => Math.floor(Math.sqrt(xp / 25)) + 1;
+const rankOf = L => RANKS.find(r => L >= r[1]);
+function gradeOf(n, total) {
+  if (!total || !n) return "F";
+  const r = n / total;
+  return r >= 1 ? "S" : r >= 5 / 6 - 1e-9 ? "A" : r >= 4 / 6 - 1e-9 ? "B" : r >= 3 / 6 - 1e-9 ? "C" : "D";
+}
+const kept = (n, total) => total > 0 && n / total >= 4 / 6 - 1e-9;
+
+let G;   // computed game state
+function compute() {
+  const Q = D.quests.filter(q => !q.archived), ids = new Set(Q.map(q => q.id)), total = Q.length;
+  const t = today();
+  let start = D.profile.since || t;
+  for (const k in D.days) if (k < start) start = k;
+  const days = [];
+  let cum = 0;
+  for (let k = start; k <= t; k = addDays(k, 1)) {
+    const done = (D.days[k] || []).filter(id => ids.has(id));
+    const n = done.length, xp = n * 10 + (n === total && total ? 20 : 0);
+    cum += xp;
+    days.push({ k, done, n, xp, cum, grade: gradeOf(n, total), kept: kept(n, total) });
+  }
+  const level = levelOf(cum), rank = rankOf(level);
+  const streak = runOf(days, d => d.kept);
+  const stats = Object.fromEntries(STATS.map(s => [s, 0]));
+  const per = {};
+  for (const q of Q) {
+    const c = days.filter(d => d.done.includes(q.id)).length;
+    stats[q.stat] = (stats[q.stat] || 0) + c;
+    per[q.id] = { count: c, ...runOf(days, d => d.done.includes(q.id)) };
+  }
+  G = { Q, total, days, xp: cum, level, rank, streak, stats, per, byKey: Object.fromEntries(days.map(d => [d.k, d])) };
+}
+// current run (today only counts once it passes) and best run
+function runOf(days, ok) {
+  let best = 0, run = 0;
+  for (const d of days) { run = ok(d) ? run + 1 : 0; best = Math.max(best, run); }
+  let cur = 0, i = days.length - 1;
+  if (i >= 0 && !ok(days[i])) i--;
+  for (; i >= 0 && ok(days[i]); i--) cur++;
+  return { cur, best };
+}
+
+/* ---------- today tab ---------- */
+let view = today();
+function renderCard() {
+  const { level, rank, xp, streak } = G;
+  const lo = xpFor(level), hi = xpFor(level + 1), pct = Math.min(100, (xp - lo) / (hi - lo) * 100);
+  const nextRank = [...RANKS].reverse().find(r => r[1] > level);
+  let goal = "";
+  if (D.profile.deadline) {
+    const left = Math.ceil((parse(D.profile.deadline) - parse(today())) / 864e5);
+    const cls = left <= 7 ? "red" : left <= 30 ? "warn" : "";
+    goal = `<span class="chip ${cls}">⏳ ${left >= 0 ? left + " days left" : "deadline passed"}</span>`;
+  }
+  const t = G.byKey[today()];
+  $("card").innerHTML = `
+    <div class="hunter">
+      <div class="rank" style="color:${rank[2]}">${rank[0]}</div>
+      <div>
+        <div class="name">${esc(D.profile.name || "Hunter")}</div>
+        <div class="lvl">LV <b>${level}</b> · ${rank[0]}-RANK · ${xp.toLocaleString()} XP</div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="sub" style="margin-top:4px;font-family:var(--mono);font-size:11px">${hi - xp} XP to LV ${level + 1}${nextRank ? ` · ${nextRank[0]}-rank at LV ${nextRank[1]}` : ""}</div>
+      </div>
+    </div>
+    <div class="chips">
+      <span class="chip ${streak.cur ? "hot" : ""}">🔥 ${streak.cur} day streak</span>
+      <span class="chip">⚡ ${t ? t.xp : 0} XP today</span>
+      ${goal}
+    </div>
+    ${D.profile.goal ? `<div class="sub" style="margin-top:10px">🎯 ${esc(D.profile.goal)}</div>` : ""}`;
+  // penalty: yesterday failed
+  const y = G.byKey[addDays(today(), -1)];
+  $("penalty").innerHTML = y && !y.kept && G.days.length > 1 ? `<div class="win penalty"><h2>⚠ PENALTY NOTICE</h2>
+    <div class="sub">Yesterday's daily quests were not completed (${y.n}/${G.total}, grade ${y.grade}). Clear at least ${Math.ceil(G.total * 4 / 6)} today to keep the System satisfied.</div></div>` : "";
+}
+function renderQuests() {
+  const t = today(), d = G.byKey[view] || { done: [], n: 0, xp: 0, grade: "F" };
+  $("dlabel").innerHTML = `${view === t ? "Today" : view === addDays(t, -1) ? "Yesterday" : nice(view).slice(0, -5)}<small>${nice(view)}</small>`;
+  $("next").disabled = view >= t;
+  $("prev").disabled = view <= G.days[0].k;
+  $("quests").innerHTML = G.Q.map(q => `
+    <button class="quest ${d.done.includes(q.id) ? "done" : ""}" data-q="${esc(q.id)}" style="--qc:${COLORS[q.color % 8]}">
+      <span class="ic">${esc(q.icon || "•")}</span>
+      <span class="t"><b>${esc(q.name)}</b><span>+10 XP · ${esc(q.stat)}</span></span>
+      <span class="box"></span>
+    </button>`).join("");
+  $("grade").textContent = d.grade;
+  $("grade").style.color = GRADE_COL[d.grade];
+  const left = G.total - d.n;
+  $("dayinfo").innerHTML = `<b>${d.n}/${G.total}</b> cleared · <b>${d.xp}</b> XP<br>${left === 0 ? "👑 Full clear, +20 bonus earned" : `${left} more for a full clear (+20 bonus)`}`;
+}
+function tickReset() {
+  const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0);
+  const s = Math.floor((m - n) / 1000);
+  $("reset").textContent = `resets in ${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+}
+$("quests").addEventListener("click", e => {
+  const b = e.target.closest(".quest"); if (!b) return;
+  const q = b.dataset.q, on = !(G.byKey[view]?.done || []).includes(q);
+  const before = { level: G.level, rank: G.rank[0], n: G.byKey[view]?.n || 0 };
+  change({ op: "tick", d: view, q, v: on });
+  compute(); renderAll();
+  if (on) {
+    const r = b.getBoundingClientRect();
+    floatText(`+10 XP`, r.right - 70, r.top + 6);
+    if (navigator.vibrate) navigator.vibrate(15);
+    const after = G.byKey[view];
+    if (after.n === G.total) setTimeout(() => toast(`Daily quest complete. Full clear bonus +20 XP`), 350);
+    else if (after.kept && before.n < after.n && !kept(before.n, G.total)) toast(`Day kept. Streak secured 🔥`);
+    if (G.rank[0] !== before.rank) overlay("RANK UP", `You are now an <b style="color:${G.rank[2]}">${G.rank[0]}-Rank</b> hunter.`);
+    else if (G.level > before.level) overlay("LEVEL UP", `You reached <b>Level ${G.level}</b>.`);
+  }
+});
+$("prev").onclick = () => { view = addDays(view, -1); renderQuests(); };
+$("next").onclick = () => { if (view < today()) { view = addDays(view, 1); renderQuests(); } };
+
+function floatText(t, x, y) {
+  const el = document.createElement("div"); el.className = "float"; el.textContent = t;
+  el.style.left = x + "px"; el.style.top = y + "px"; document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+let toastT;
+function toast(msg) {
+  $("toast").innerHTML = `<b>[SYSTEM]</b>${msg}`; $("toast").classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(() => $("toast").classList.remove("on"), 2800);
+}
+function overlay(title, html) {
+  $("ov").innerHTML = `<div class="win"><div class="sub" style="letter-spacing:.3em;color:var(--glow)">[ SYSTEM ]</div>
+    <div class="big">${title}</div><p>${html}</p><button class="btn pri" id="ovok">Arise</button></div>`;
+  $("ov").classList.add("on");
+  $("ovok").onclick = () => $("ov").classList.remove("on");
+}
+
+/* ---------- svg helpers ---------- */
+const NS = "http://www.w3.org/2000/svg";
+function svg(el, w, h) { el.innerHTML = ""; const s = document.createElementNS(NS, "svg"); s.setAttribute("viewBox", `0 0 ${w} ${h}`); s.setAttribute("height", h); el.appendChild(s); return s; }
+function add(p, tag, attrs, text) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; p.appendChild(e); return e; }
+const tip = $("tip");
+function showTip(x, y, html) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, x - w / 2)) + "px";
+  tip.style.top = (y - h - 14 < 8 ? y + 18 : y - h - 14) + "px";
+}
+const hideTip = () => { tip.style.display = "none"; };
+document.addEventListener("pointerdown", e => { if (!e.target.closest(".chart")) hideTip(); });
+addEventListener("scroll", hideTip, { passive: true });
+function roundTop(x, y, w, h, r) {   // bar with rounded data-end, square at the baseline
+  r = Math.min(r, w / 2, h);
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p; return 10 * p; }
+
+/* ---------- graphs ---------- */
+let range = 90;
+function inRange() { return range ? G.days.slice(-range) : G.days; }
+
+function renderKpis() {
+  const ds = inRange(), n = ds.length || 1;
+  const xp = ds.reduce((a, d) => a + d.xp, 0), keptN = ds.filter(d => d.kept).length, full = ds.filter(d => d.n === G.total).length;
+  $("kpis").innerHTML = [
+    [xp.toLocaleString(), "XP earned"], [Math.round(keptN / n * 100) + "%", "days kept"], [full, "full clears"],
+  ].map(([v, l]) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`).join("");
+}
+
+function renderXp() {
+  const el = $("c-xp"), ds = inRange(), W = el.clientWidth || 340, H = 190, L = 40, R = 10, T = 10, B = 22;
+  const s = svg(el, W, H);
+  const y0 = ds.length ? ds[0].cum - ds[0].xp : 0, y1 = ds.length ? ds[ds.length - 1].cum : 1;
+  const lo = Math.floor(y0 / 100) * 100, hi = Math.max(lo + 100, niceMax(y1 - lo) + lo);
+  const X = i => L + (ds.length > 1 ? i / (ds.length - 1) : 0.5) * (W - L - R), Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  for (let i = 0; i <= 4; i++) {
+    const v = lo + (hi - lo) * i / 4;
+    add(s, "line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: "#16243a", "stroke-width": 1 });
+    add(s, "text", { x: L - 6, y: Y(v) + 3, "text-anchor": "end" }, v >= 1000 ? (v / 1000).toFixed(v % 1000 ? 1 : 0) + "k" : v);
+  }
+  // level thresholds inside the range
+  for (let lv = levelOf(lo) + 1; xpFor(lv) <= hi; lv++) {
+    if (xpFor(lv) < lo) continue;
+    add(s, "line", { x1: L, x2: W - R, y1: Y(xpFor(lv)), y2: Y(xpFor(lv)), stroke: "#2a4a74", "stroke-dasharray": "2 4" });
+    add(s, "text", { x: W - R, y: Y(xpFor(lv)) - 3, "text-anchor": "end", fill: "#4c6a90" }, "LV " + lv);
+  }
+  if (!ds.length) return;
+  const pts = ds.map((d, i) => `${X(i).toFixed(1)},${Y(d.cum).toFixed(1)}`);
+  const grad = add(add(s, "defs", {}), "linearGradient", { id: "xpg", x1: 0, x2: 0, y1: 0, y2: 1 });
+  add(grad, "stop", { offset: 0, "stop-color": "#3987e5", "stop-opacity": .35 }); add(grad, "stop", { offset: 1, "stop-color": "#3987e5", "stop-opacity": 0 });
+  add(s, "path", { d: `M${X(0)},${H - B}L${pts.join("L")}L${X(ds.length - 1)},${H - B}Z`, fill: "url(#xpg)" });
+  add(s, "path", { d: "M" + pts.join("L"), fill: "none", stroke: "#4fc3ff", "stroke-width": 2, "stroke-linejoin": "round" });
+  [0, Math.floor((ds.length - 1) / 2), ds.length - 1].forEach((i, j) =>
+    add(s, "text", { x: X(i), y: H - 6, "text-anchor": ["start", "middle", "end"][j] }, nice(ds[i].k).slice(4, -5)));
+  const cross = add(s, "line", { y1: T, y2: H - B, stroke: "#7c8aa0", "stroke-width": 1, visibility: "hidden" });
+  const dot = add(s, "circle", { r: 5, fill: "#4fc3ff", stroke: "#05070d", "stroke-width": 2, visibility: "hidden" });
+  const hit = add(s, "rect", { x: L, y: 0, width: W - L - R, height: H, fill: "transparent" });
+  const move = e => {
+    const r = s.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(ds.length - 1, Math.round((px - L) / (W - L - R) * (ds.length - 1))));
+    const d = ds[i];
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", X(i)); dot.setAttribute("cy", Y(d.cum)); dot.setAttribute("visibility", "visible");
+    showTip(r.left + X(i) * r.width / W, r.top + Y(d.cum) * r.height / H,
+      `<div class="h">${nice(d.k)}</div><b>${d.cum.toLocaleString()} XP</b> · LV ${levelOf(d.cum)}<br><span class="sub">+${d.xp} that day</span>`);
+  };
+  hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); hideTip(); });
+}
+
+function renderBars() {
+  const el = $("c-bars"), all = inRange(), W = el.clientWidth || 340, H = 180, L = 26, R = 6, T = 8, B = 22;
+  // long ranges: one bar per week (average quests per day), else one per day
+  const weekly = all.length > 100;
+  const groups = [];
+  if (weekly) for (let i = 0; i < all.length; i += 7) groups.push(all.slice(i, i + 7));
+  else all.forEach(d => groups.push([d]));
+  $("perday-note").textContent = weekly ? "weekly average" : "";
+  const s = svg(el, W, H), max = Math.max(1, G.total);
+  const Y = v => T + (1 - v / max) * (H - T - B), bw = (W - L - R) / groups.length, gap = bw > 6 ? 2 : bw > 3 ? 1 : 0;
+  for (let v = 0; v <= max; v += max > 6 ? 2 : 1) {
+    add(s, "line", { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: "#16243a" });
+    add(s, "text", { x: L - 5, y: Y(v) + 3, "text-anchor": "end" }, v);
+  }
+  groups.forEach((g, i) => {
+    const x = L + i * bw + gap / 2, w = Math.max(1, bw - gap);
+    let acc = 0;
+    const segs = G.Q.map(q => ({ q, v: g.filter(d => d.done.includes(q.id)).length / g.length })).filter(t => t.v > 0);
+    segs.forEach((t, j) => {
+      const y = Y(acc + t.v), h = Y(acc) - y - (j < segs.length - 1 && h0(Y(acc) - y) ? 1 : 0);
+      if (h > 0) add(s, "path", { d: j === segs.length - 1 ? roundTop(x, y, w, h, Math.min(3, w / 2)) : `M${x},${y}h${w}v${h}h${-w}Z`, fill: COLORS[t.q.color % 8] });
+      acc += t.v;
+    });
+    const hit = add(s, "rect", { x: L + i * bw, y: T, width: bw, height: H - T - B, fill: "transparent" });
+    const show = e => {
+      const r = s.getBoundingClientRect();
+      const head = weekly ? `Week of ${nice(g[0].k).slice(4)}` : nice(g[0].k);
+      const rows = G.Q.map(q => { const c = g.filter(d => d.done.includes(q.id)).length; return c ? `<div class="row"><i style="background:${COLORS[q.color % 8]}"></i>${esc(q.name)}${weekly ? ` · ${c}/${g.length} days` : ""}</div>` : ""; }).join("");
+      const tot = g.reduce((a, d) => a + d.n, 0) / g.length;
+      showTip(e.clientX, r.top + Y(acc) * r.height / H, `<div class="h">${head}</div><b>${weekly ? tot.toFixed(1) + " avg" : tot + "/" + G.total} quests</b>${rows || '<div class="sub">nothing done</div>'}`);
+    };
+    hit.addEventListener("pointermove", show); hit.addEventListener("pointerdown", show); hit.addEventListener("pointerleave", hideTip);
+  });
+  [0, groups.length - 1].forEach((i, j) => groups[i] && add(s, "text", { x: j ? W - R : L, y: H - 6, "text-anchor": j ? "end" : "start" }, nice(groups[i][0].k).slice(4, -5)));
+  $("lg-bars").innerHTML = G.Q.map(q => `<span><i style="background:${COLORS[q.color % 8]}"></i>${esc(q.name)}</span>`).join("");
+}
+const h0 = v => v > 2;
+
+function renderHeat() {
+  const el = $("c-heat"), W = el.clientWidth || 340;
+  const end = today(), endD = parse(end);
+  const first = addDays(end, -(52 * 7 + endD.getDay()));          // Sunday, 52 weeks back
+  const weeks = 53, cell = Math.max(11, Math.min(14, (W - 24) / weeks - 2)), gap = 2, H = 7 * (cell + gap) + 18;
+  const SW = Math.max(W, 22 + weeks * (cell + gap));
+  const s = svg(el, SW, H), ox = SW - weeks * (cell + gap);
+  s.style.width = SW + "px";
+  ["M", "W", "F"].forEach((l, i) => add(s, "text", { x: ox - 4, y: 14 + (i * 2 + 1) * (cell + gap) + cell * .8, "text-anchor": "end" }, l));
+  let lastMonth = -1;
+  for (let w = 0; w < weeks; w++) for (let d = 0; d < 7; d++) {
+    const k = addDays(first, w * 7 + d); if (k > end) continue;
+    const day = G.byKey[k], x = ox + w * (cell + gap), y = 14 + d * (cell + gap);
+    if (d === 0 && parse(k).getDate() <= 7 && parse(k).getMonth() !== lastMonth) {
+      lastMonth = parse(k).getMonth(); add(s, "text", { x, y: 9 }, MON[lastMonth]);
+    }
+    const lvl = !day || !day.n ? 0 : Math.min(5, Math.ceil(day.n / G.total * 5));
+    const r = add(s, "rect", { x, y, width: cell, height: cell, rx: 2.5, fill: HEAT[lvl], stroke: k === end ? "#4fc3ff" : "none" });
+    const show = e => { showTip(e.clientX, e.clientY, `<div class="h">${nice(k)}</div>${day ? `<b>${day.n}/${G.total}</b> · grade ${day.grade} · ${day.xp} XP` : "not tracked"}`); };
+    r.addEventListener("pointermove", show);
+    r.addEventListener("click", () => { if (day) { view = k; renderQuests(); go("today"); toast(`Opened ${nice(k)}`); } });
+    r.addEventListener("pointerleave", hideTip);
+  }
+  el.scrollLeft = el.scrollWidth;
+}
+
+function hbars(el, rows, opts = {}) {      // rows: [{label, value, max, color, note}]
+  const W = el.clientWidth || 340, rowH = 26, LW = opts.lw || 96, H = rows.length * rowH + 4, s = svg(el, W, H);
+  rows.forEach((r, i) => {
+    const y = i * rowH + 4, bw = W - LW - 46, w = r.max ? Math.max(0, r.value / r.max * bw) : 0;
+    add(s, "text", { x: 0, y: y + 13, style: "font-family:var(--sans);font-size:12px;fill:#c3cfdf" }, r.label);
+    add(s, "rect", { x: LW, y: y + 3, width: bw, height: 14, rx: 4, fill: "#0f1b2e" });
+    if (w > 0) add(s, "path", { d: `M${LW},${y + 3}h${Math.max(0, w - 4)}q4,0 4,4v6q0,4 -4,4h${-Math.max(0, w - 4)}Z`, fill: r.color });
+    add(s, "text", { x: W, y: y + 14, "text-anchor": "end", style: "font-size:11px;fill:#dfe8f5" }, r.note);
+    const hit = add(s, "rect", { x: 0, y, width: W, height: rowH, fill: "transparent" });
+    if (r.tip) { const f = e => showTip(e.clientX, e.clientY, r.tip); hit.addEventListener("pointermove", f); hit.addEventListener("pointerdown", f); hit.addEventListener("pointerleave", hideTip); }
+  });
+}
+function renderRate() {
+  const ds = inRange(), n = ds.length || 1;
+  hbars($("c-rate"), G.Q.map(q => {
+    const c = ds.filter(d => d.done.includes(q.id)).length;
+    return { label: `${q.icon || ""} ${q.name}`.slice(0, 19), value: c, max: n, color: COLORS[q.color % 8], note: Math.round(c / n * 100) + "%",
+      tip: `<div class="h">${esc(q.name)}</div><b>${c} of ${n} days</b><br><span class="sub">best streak ${G.per[q.id].best} · now ${G.per[q.id].cur}</span>` };
+  }), { lw: 112 });
+}
+function renderWeek() {
+  const ds = inRange(), sums = Array(7).fill(0), cnt = Array(7).fill(0);
+  ds.forEach(d => { const w = (parse(d.k).getDay() + 6) % 7; sums[w] += d.n; cnt[w]++; });
+  const avgs = sums.map((v, i) => cnt[i] ? v / cnt[i] : 0), best = Math.max(...avgs);
+  hbars($("c-week"), ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((l, i) => ({
+    label: l, value: avgs[i], max: G.total, color: avgs[i] === best && best > 0 ? "#4fc3ff" : "#256abf", note: avgs[i].toFixed(1),
+    tip: `<div class="h">${l}s</div><b>${avgs[i].toFixed(2)} quests</b> on average over ${cnt[i]} days`,
+  })), { lw: 40 });
+}
+function renderGrades() {
+  const ds = inRange(), c = {}; ds.forEach(d => c[d.grade] = (c[d.grade] || 0) + 1);
+  const max = Math.max(1, ...Object.values(c));
+  const ramp = { S: "#6da7ec", A: "#5598e7", B: "#3987e5", C: "#2a78d6", D: "#256abf", F: "#184f95" };
+  const label = { S: "👑 S  all", A: "🔥 A", B: "✅ B", C: "🙂 C", D: "⚠️ D", F: "💀 F  none" };
+  hbars($("c-grades"), ["S", "A", "B", "C", "D", "F"].map(g => ({
+    label: label[g], value: c[g] || 0, max, color: ramp[g], note: String(c[g] || 0),
+    tip: `<div class="h">Grade ${g}</div><b>${c[g] || 0} days</b> (${Math.round((c[g] || 0) / (ds.length || 1) * 100)}%)`,
+  })), { lw: 84 });
+}
+
+function renderRadar() {
+  const el = $("c-radar"), W = el.clientWidth || 340, H = 240, cx = W / 2, cy = H / 2 + 4, R = Math.min(W / 2 - 50, 92);
+  const s = svg(el, W, H), vals = STATS.map(k => G.stats[k] || 0), max = niceMax(Math.max(10, ...vals));
+  const pt = (i, f) => { const a = -Math.PI / 2 + i * Math.PI / 3; return [cx + Math.cos(a) * R * f, cy + Math.sin(a) * R * f]; };
+  [0.25, 0.5, 0.75, 1].forEach(f => add(s, "polygon", { points: STATS.map((_, i) => pt(i, f).join(",")).join(" "), fill: "none", stroke: "#1a2a44" }));
+  STATS.forEach((k, i) => {
+    add(s, "line", { x1: cx, y1: cy, x2: pt(i, 1)[0], y2: pt(i, 1)[1], stroke: "#1a2a44" });
+    const [x, y] = pt(i, 1.24);
+    add(s, "text", { x, y: y - 2, "text-anchor": "middle", style: "font-size:11px;fill:#c3cfdf;font-weight:600" }, k);
+    add(s, "text", { x, y: y + 11, "text-anchor": "middle" }, vals[i]);
+  });
+  add(s, "polygon", { points: vals.map((v, i) => pt(i, v / max).join(",")).join(" "), fill: "rgba(79,195,255,.18)", stroke: "#4fc3ff", "stroke-width": 2, "stroke-linejoin": "round" });
+  vals.forEach((v, i) => {
+    const [x, y] = pt(i, v / max), c = add(s, "circle", { cx: x, cy: y, r: 4, fill: "#4fc3ff", stroke: "#05070d", "stroke-width": 2 });
+    const q = G.Q.filter(q => q.stat === STATS[i]).map(q => esc(q.name)).join(", ") || "no quest";
+    const f = e => showTip(e.clientX, e.clientY, `<div class="h">${STATS[i]}</div><b>${v}</b> days of ${q}`);
+    const hit = add(s, "circle", { cx: x, cy: y, r: 16, fill: "transparent" });
+    hit.addEventListener("pointerdown", f); hit.addEventListener("pointermove", f); hit.addEventListener("pointerleave", hideTip);
+  });
+  add(s, "text", { x: W - 4, y: H - 4, "text-anchor": "end" }, `outer ring = ${max}`);
+}
+
+/* ---------- awards ---------- */
+function renderAwards() {
+  const st = G.streak;
+  $("streaks").innerHTML = `<tr><th>Quest</th><th>Now</th><th>Best</th><th>Total</th></tr>
+    <tr><td><b>🔥 Day kept</b></td><td>${st.cur}</td><td>${st.best}</td><td>${G.days.filter(d => d.kept).length}</td></tr>` +
+    G.Q.map(q => `<tr><td><span style="color:${COLORS[q.color % 8]}">●</span> ${esc(q.icon || "")} ${esc(q.name)}</td><td>${G.per[q.id].cur}</td><td>${G.per[q.id].best}</td><td>${G.per[q.id].count}</td></tr>`).join("");
+  const fullRun = runOf(G.days, d => d.n === G.total && G.total > 0).best;
+  const sCount = G.days.filter(d => d.n === G.total).length;
+  const maxStat = Math.max(0, ...Object.values(G.stats));
+  const list = [
+    ["⚔️", "Awakened", "Clear your first quest", G.xp > 0 ? 1 : 0, 1],
+    ["👑", "Flawless", "First full-clear day", sCount, 1],
+    ["🔥", "Week of Fire", "7-day streak", st.best, 7],
+    ["🌙", "Moon Cycle", "30-day streak", st.best, 30],
+    ["☀️", "Unbroken", "100-day streak", st.best, 100],
+    ["💠", "Perfect Week", "7 full clears in a row", fullRun, 7],
+    ["🗡️", "Double Dungeon", "50 full-clear days", sCount, 50],
+    ["📈", "Rising", "Reach level 10 (D-rank)", G.level, 10],
+    ["🌀", "C-Rank Gate", "Reach level 20", G.level, 20],
+    ["🐉", "B-Rank Raid", "Reach level 30", G.level, 30],
+    ["⚡", "A-Rank Elite", "Reach level 45", G.level, 45],
+    ["🌑", "Shadow Monarch", "Reach S-rank (level 60)", G.level, 60],
+    ["💪", "Iron Body", "One stat at 100", maxStat, 100],
+    ["🧠", "Grand Sage", "One stat at 365", maxStat, 365],
+    ["✨", "10,000 XP", "Earn 10,000 XP", G.xp, 10000],
+  ];
+  $("awards").innerHTML = list.map(([e, n, d, v, goal]) => `<div class="ach ${v >= goal ? "" : "lock"}"><div class="e">${e}</div><b>${n}</b><span>${d}</span>
+    ${v >= goal ? "" : `<div class="bar"><i style="width:${Math.min(100, v / goal * 100)}%"></i></div><span>${Math.min(v, goal).toLocaleString()} / ${goal.toLocaleString()}</span>`}</div>`).join("");
+}
+
+/* ---------- settings ---------- */
+let qdraft = [];
+function renderSettings() {
+  $("p-name").value = D.profile.name || ""; $("p-goal").value = D.profile.goal || ""; $("p-dl").value = D.profile.deadline || "";
+  qdraft = structuredClone(D.quests); drawQEdit(); renderSyncInfo();
+}
+function drawQEdit() {
+  $("qedit").innerHTML = qdraft.map((q, i) => q.archived ? "" : `<div class="qrow" data-i="${i}">
+    <input class="ic" value="${esc(q.icon || "")}" data-f="icon" maxlength="4" aria-label="Icon">
+    <input value="${esc(q.name)}" data-f="name" maxlength="40" aria-label="Quest name">
+    <select data-f="stat">${STATS.map(s => `<option ${s === q.stat ? "selected" : ""}>${s}</option>`).join("")}</select>
+    <button data-del aria-label="Remove quest">✕</button></div>`).join("");
+}
+$("qedit").addEventListener("input", e => { const r = e.target.closest(".qrow"); if (r && e.target.dataset.f) qdraft[r.dataset.i][e.target.dataset.f] = e.target.value; });
+$("qedit").addEventListener("click", e => {
+  if (!e.target.closest("[data-del]")) return;
+  const i = e.target.closest(".qrow").dataset.i;
+  if (qdraft.filter(q => !q.archived).length <= 1) return toast("Keep at least one quest.");
+  qdraft[i].archived = true; drawQEdit();
+});
+$("q-add").onclick = () => {
+  if (qdraft.filter(q => !q.archived).length >= 8) return toast("8 quests max.");
+  const used = new Set(qdraft.filter(q => !q.archived).map(q => q.color));
+  const color = [0, 1, 2, 3, 4, 5, 6, 7].find(c => !used.has(c)) ?? 0;
+  qdraft.push({ id: "q" + Date.now().toString(36), name: "New quest", icon: "⭐", stat: "WILL", color }); drawQEdit();
+};
+$("q-save").onclick = () => {
+  const qs = qdraft.map(q => ({ ...q, name: (q.name || "Quest").trim().slice(0, 40), archived: !!q.archived }));
+  change({ op: "quests", quests: qs }); compute(); renderAll(); toast("Quests updated.");
+};
+$("p-save").onclick = () => {
+  change({ op: "profile", name: $("p-name").value.trim() || "Hunter", goal: $("p-goal").value.trim(), deadline: $("p-dl").value });
+  compute(); renderAll(); toast("Profile saved.");
+};
+
+/* ---------- sync ---------- */
+let syncState = "off", syncTimer, syncing = false;
+function renderSyncInfo() {
+  const dot = `<span class="syncdot ${syncState === "ok" ? "ok" : syncState === "bad" ? "bad" : ""}"></span>`;
+  const last = store.get("hunter-last-sync", 0);
+  $("syncinfo").innerHTML = !syncCfg ? `${dot}Not connected. Everything stays on this phone only.`
+    : `${dot}${syncState === "ok" ? "Synced with your server" : syncState === "bad" ? "Server not reachable, changes are saved here and will sync later" : "Connecting…"}`
+      + `${last ? ` · last ${new Date(last).toLocaleString()}` : ""}${pending.length ? ` · ${pending.length} waiting` : ""}`;
+}
+function scheduleSync() { clearTimeout(syncTimer); syncTimer = setTimeout(sync, 800); }
+async function discover() {
+  const r = await fetch(`https://ntfy.sh/${encodeURIComponent(syncCfg.t)}/json?poll=1&since=24h`, { cache: "no-store" });
+  const lines = (await r.text()).trim().split("\n").filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } });
+  const urls = lines.filter(m => m && m.event === "message" && /^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(m.message)).map(m => m.message);
+  if (!urls.length) throw new Error("no address");
+  syncCfg.url = urls[urls.length - 1]; store.set("hunter-sync", syncCfg);
+}
+async function call(body) {
+  const r = await fetch(syncCfg.url + "/hunter", {
+    method: body ? "POST" : "GET", cache: "no-store",
+    headers: { Authorization: "Bearer " + syncCfg.k, ...(body ? { "Content-Type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (r.status === 403) throw Object.assign(new Error("key rejected"), { fatal: true });
+  if (!r.ok) throw new Error("server " + r.status);
+  return r.json();
+}
+async function sync() {
+  if (!syncCfg || syncing) return;
+  syncing = true;
+  const sending = pending.slice();
+  try {
+    let data;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (!syncCfg.url) await discover();
+        data = await call(sending.length ? { op: "batch", ops: sending } : null);
+        break;
+      } catch (e) {
+        if (e.fatal || attempt) throw e;
+        syncCfg.url = null;          // the tunnel address may have changed; look it up again
+      }
+    }
+    if (!data || !Array.isArray(data.quests)) throw new Error("bad reply");
+    base = data; store.set("hunter-data", base);
+    pending = pending.slice(sending.length); store.set("hunter-pending", pending);
+    store.set("hunter-last-sync", Date.now());
+    syncState = "ok";
+    rebuild(); compute(); renderAll();
+  } catch (e) {
+    syncState = "bad";
+    if (e.fatal) toast("Sync key was rejected. Get a new setup code.");
+  } finally { syncing = false; renderSyncInfo(); }
+}
+function connect(code) {
+  try {
+    const j = JSON.parse(atob(code.trim().replace(/-/g, "+").replace(/_/g, "/")));
+    if (!j.k || !j.t) throw 0;
+    syncCfg = { k: j.k, t: j.t, url: null }; store.set("hunter-sync", syncCfg);
+    syncState = "wait"; renderSyncInfo(); toast("Connecting to your server…"); sync();
+    return true;
+  } catch { toast("That setup code doesn't look right."); return false; }
+}
+$("s-save").onclick = () => { if (connect($("s-code").value)) $("s-code").value = ""; };
+$("s-now").onclick = () => { if (!syncCfg) return toast("Not connected."); syncCfg.url = null; sync(); };
+$("s-off").onclick = () => {
+  if (!syncCfg || !confirm("Disconnect from the server? Your data stays on this phone.")) return;
+  syncCfg = null; store.set("hunter-sync", null); syncState = "off"; renderSyncInfo();
+};
+
+/* ---------- backup ---------- */
+$("b-exp").onclick = async () => {
+  const blob = new Blob([JSON.stringify(D, null, 1)], { type: "application/json" });
+  const name = `arise-backup-${today()}.json`, file = new File([blob], name, { type: "application/json" });
+  try { if (navigator.canShare?.({ files: [file] })) return await navigator.share({ files: [file], title: name }); } catch (e) { if (e.name === "AbortError") return; }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+$("b-imp").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (!Array.isArray(j.quests) || typeof j.days !== "object") throw 0;
+    if (!confirm("Replace the data on this phone with this backup?")) return;
+    base = j; pending = [];
+    if (syncCfg) {   // push the restored data to the server as well
+      pending.push({ op: "quests", quests: j.quests }, { op: "profile", ...j.profile });
+      for (const [d, ids] of Object.entries(j.days)) for (const q of ids) pending.push({ op: "tick", d, q, v: true });
+    }
+    store.set("hunter-data", base); store.set("hunter-pending", pending);
+    rebuild(); compute(); renderAll(); scheduleSync(); toast("Backup restored.");
+  } catch { toast("That file isn't an Arise backup."); }
+  e.target.value = "";
+};
+
+/* ---------- tabs & boot ---------- */
+let tab = "today";
+function go(t) {
+  tab = t; hideTip();
+  document.querySelectorAll(".tab").forEach(s => s.classList.toggle("on", s.id === "t-" + t));
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  scrollTo(0, 0); renderAll();
+}
+$("nav").onclick = e => { const b = e.target.closest("button"); if (b) go(b.dataset.t); };
+$("ranges").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  range = +b.dataset.r; document.querySelectorAll("#ranges button").forEach(x => x.classList.toggle("on", x === b)); renderAll();
+};
+function renderAll() {
+  renderCard(); renderQuests();
+  if (tab === "today") renderRadar();
+  if (tab === "graphs") { renderKpis(); renderXp(); renderBars(); renderHeat(); renderRate(); renderWeek(); renderGrades(); }
+  if (tab === "awards") renderAwards();
+  if (tab === "set" && !document.activeElement?.closest("#t-set")) renderSettings();
+}
+let lastDay = today();
+setInterval(() => {
+  tickReset();
+  if (today() !== lastDay) { if (view === lastDay) view = today(); lastDay = today(); compute(); renderAll(); }
+}, 1000);
+addEventListener("resize", () => renderAll());
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { compute(); renderAll(); sync(); } });
+setInterval(sync, 60000);
+
+// setup link: …/#setup=<code>
+const m = location.hash.match(/setup=([A-Za-z0-9_=-]+)/);
+if (m) { history.replaceState(null, "", location.pathname); connect(m[1]); }
+rebuild(); compute(); tickReset(); renderAll(); sync();
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
