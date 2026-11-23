@@ -366,6 +366,11 @@ textarea.big { width: 100%; min-height: 160px; background: #08101e; border: 1px 
       <div id="qedit"></div>
       <div class="row2"><button class="btn" id="q-add">+ Add quest</button><button class="btn pri" id="q-save">Save quests</button></div>
     </div>
+    <div class="win"><h2>Pause mode</h2>
+      <p class="sub" id="pauseinfo" style="margin-bottom:12px"></p>
+      <label class="field"><span>BACK ON (optional: resumes by itself after this day)</span><input id="pz-to" type="date"></label>
+      <div class="row2"><button class="btn pri" id="pz-on">Pause now</button><button class="btn" data-resume>Resume</button></div>
+    </div>
     <div class="win"><h2>Reminders</h2>
       <p class="sub" id="pushinfo" style="margin-bottom:12px"></p>
       <div class="row2" style="margin-bottom:12px"><button class="btn pri" id="n-on">Turn on reminders</button><button class="btn" id="n-test">Send a test</button></div>
@@ -381,6 +386,7 @@ textarea.big { width: 100%; min-height: 160px; background: #08101e; border: 1px 
         • A day is <b>kept</b> with at least 4 of 6 quests (two-thirds).<br>
         • Every finished day that isn't kept costs XP: −20, then −40, −60, −80 and up to −100 for each further missed day in a row. Your level and rank drop when your XP does.<br>
         • Keeping a day resets the penalty back to −20.<br>
+        • Pause mode (travel, illness): no penalties or reminders, streaks are frozen, and that week's dungeon is sealed.<br>
         • <span id="decayinfo"></span>
       </div>
     </div>
@@ -452,6 +458,7 @@ function applyOp(data, op) {
   else if (op.op === "goal") data.goal = { title: op.title, deadline: op.deadline, start: op.start, milestones: op.milestones, reward: op.reward, mxp: op.mxp };
   else if (op.op === "milestone") { for (const m of data.goal?.milestones || []) if (m.id === op.id) m.done = op.v ? op.d : ""; }
   else if (op.op === "shop") data.shop = op.items;
+  else if (op.op === "pauses") data.pauses = op.pauses;
   else if (op.op === "buy") data.buys = [...(data.buys || []).filter(b => b.id !== op.id), { id: op.id, d: op.d, name: op.name, icon: op.icon, cost: op.cost }];
   else if (op.op === "unbuy") data.buys = (data.buys || []).filter(b => b.id !== op.id);
   else if (op.op === "notify") data.notify = { off: !!op.off, evening: op.evening, late: op.late, morning: op.morning };
@@ -505,21 +512,23 @@ function compute() {
   const dungeons = [];
   for (let k = start; k <= t; k = addDays(k, 1)) {
     const done = (D.days[k] || []).filter(id => ids.has(id));
-    const n = done.length, xp = n * 10 + (n === total && total ? 20 : 0), ok = kept(n, total);
-    // decay: every finished day that isn't kept costs XP, more for each missed day in a row (20, 40 … 100)
+    const n = done.length, xp = n * 10 + (n === total && total ? 20 : 0), ok = kept(n, total), off = isPaused(k);
+    // decay: every finished day that isn't kept costs XP, more for each missed day in a row (20, 40 … 100).
+    // Paused days cost nothing and leave the miss count where it was.
     let pen = 0;
-    if (decayFrom && k >= decayFrom && k < t) { miss = ok ? 0 : miss + 1; pen = Math.min(20 * miss, 100); }
+    if (decayFrom && k >= decayFrom && k < t && !off) { miss = ok ? 0 : miss + 1; pen = Math.min(20 * miss, 100); }
     // weekly dungeon: a new gate every Monday, ranked by your level at that moment
     let dun = 0;
     if (decayFrom && k >= decayFrom && total) {
       if (!wk || parse(k).getDay() === 1) { wk = makeDungeon(mondayOf(k), levelOf(cum), Q); dungeons.push(wk); }
       wk.kept += ok; wk.full += n === total; wk.qc += done.includes(wk.quest.id);
-      if (!wk.cleared && dungeonMet(wk)) { wk.cleared = k; dun = wk.reward; }
+      if (off) wk.sealed = true;                    // a pause during the week seals the gate: no reward, no failure
+      if (!wk.cleared && !wk.sealed && dungeonMet(wk)) { wk.cleared = k; dun = wk.reward; }
     }
     const bonus = (goalXp[k] || 0) + dun;
     cum = Math.max(0, cum + xp + bonus - pen);
     if (decayFrom && k >= decayFrom) gold += xp + bonus;
-    days.push({ k, done, n, xp, bonus, gxp: goalXp[k] || 0, dun, pen, miss, net: xp + bonus - pen, cum, grade: gradeOf(n, total), kept: ok });
+    days.push({ k, done, n, xp, bonus, gxp: goalXp[k] || 0, dun, pen, miss, paused: off, net: xp + bonus - pen, cum, grade: gradeOf(n, total), kept: ok });
   }
   const spent = (D.buys || []).reduce((a, b) => a + (b.cost || 0), 0);
   const level = levelOf(cum), rank = rankOf(level);
@@ -535,14 +544,17 @@ function compute() {
     byKey: Object.fromEntries(days.map(d => [d.k, d])) };
 }
 // current run (today only counts once it passes) and best run
+// paused days neither count nor break a run
 function runOf(days, ok) {
   let best = 0, run = 0;
-  for (const d of days) { run = ok(d) ? run + 1 : 0; best = Math.max(best, run); }
+  for (const d of days) { if (d.paused && !ok(d)) continue; run = ok(d) ? run + 1 : 0; best = Math.max(best, run); }
   let cur = 0, i = days.length - 1;
   if (i >= 0 && !ok(days[i])) i--;
-  for (; i >= 0 && ok(days[i]); i--) cur++;
+  for (; i >= 0; i--) { if (ok(days[i])) cur++; else if (!days[i].paused) break; }
   return { cur, best };
 }
+const activePause = () => (D.pauses || []).find(p => p.from <= today() && (!p.to || today() <= p.to));
+const isPaused = k => (D.pauses || []).some(p => p.from <= k && (!p.to || k <= p.to));
 
 /* ---------- weekly dungeon ---------- */
 const mondayOf = k => addDays(k, -((parse(k).getDay() + 6) % 7));
@@ -606,6 +618,7 @@ function renderCard() {
     <div class="chips">
       <span class="chip ${streak.cur ? "hot" : ""}">🔥 ${streak.cur} day streak</span>
       <span class="chip">⚡ <span id="xptoday">${t ? t.xp : 0}</span> XP today</span>
+      ${activePause() ? `<span class="chip warn">⏸ paused</span>` : ""}
       <span class="chip" style="color:var(--gold);border-color:#6b5313">🪙 ${G.gold.toLocaleString()}</span>${goal}${sync}
     </div>
     ${D.profile.goal ? `<div class="sub" style="margin-top:12px">🎯 ${esc(D.profile.goal)}</div>` : ""}`;
@@ -622,7 +635,14 @@ function renderCard() {
   const y = G.byKey[addDays(today(), -1)];
   const td = G.byKey[today()], needN = Math.ceil(G.total * 4 / 6);
   const stake = Math.min(20 * ((y && !y.kept ? y.miss : 0) + 1), 100);
-  $("penalty").innerHTML = y && !y.kept && G.days.length > 1 ? `<div class="win penalty"><h2>Penalty Zone <span class="r">−${y.pen || 0} XP</span></h2>
+  const ap = activePause();
+  if (ap) {
+    $("penalty").innerHTML = `<div class="win" style="border-color:#6b5313"><h2 style="color:var(--gold)">Pause mode <span class="r">since ${short(ap.from)}${ap.to ? ` · until ${short(ap.to)}` : ""}</span></h2>
+      <div class="sub" style="margin-bottom:12px">The System is on standby. No penalties, no reminders, streaks are frozen. Quests you still do count for XP and Gold.</div>
+      <button class="btn pri" data-resume>Resume now</button></div>`;
+    return;
+  }
+  $("penalty").innerHTML = y && !y.kept && !y.paused && G.days.length > 1 ? `<div class="win penalty"><h2>Penalty Zone <span class="r">−${y.pen || 0} XP</span></h2>
     <div class="sub">Yesterday wasn't kept (${y.n}/${G.total}, grade ${y.grade})${y.pen ? `: the System took <b style="color:var(--bad)">${y.pen} XP</b>` : ""}${y.miss > 1 ? `, ${y.miss} days in a row` : ""}.
     ${td && td.kept ? "Today is kept. The slide has stopped." : `Clear ${needN - (td ? td.n : 0)} more today or lose ${stake} XP at midnight.`}</div></div>`
     : D.rules?.decayFrom && td && !td.kept && new Date().getHours() >= 18 ? `<div class="win penalty"><h2>Behind schedule</h2>
@@ -651,7 +671,7 @@ function renderQuests() {
   $("grade").textContent = d.grade;
   $("grade").style.color = GRADE_COL[d.grade];
   const left = G.total - d.n;
-  $("dayinfo").innerHTML = `<b>${d.n}/${G.total}</b> cleared · <b>${d.xp}</b> XP${d.pen ? ` · <b style="color:var(--bad)">−${d.pen}</b> penalty` : ""}<br>${left === 0 ? "👑 Full clear · +20 bonus earned" : `${left} more for a full clear (+20 bonus)`}`;
+  $("dayinfo").innerHTML = (d.paused ? `<span style="color:var(--gold)">⏸ paused day</span> · ` : "") + `<b>${d.n}/${G.total}</b> cleared · <b>${d.xp}</b> XP${d.pen ? ` · <b style="color:var(--bad)">−${d.pen}</b> penalty` : ""}<br>${left === 0 ? "👑 Full clear · +20 bonus earned" : `${left} more for a full clear (+20 bonus)`}`;
 }
 function tickReset() {
   const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0);
@@ -800,12 +820,13 @@ function renderDungeon() {
     <div class="gate"><div class="rk" style="color:${rc}">${w.rank}</div><div><b>${w.rank}-Rank ${w.name}</b><span class="sub">Boss: ${w.boss} · reward +${w.reward} XP and Gold</span></div></div>
     ${obj.map(([l, v, n]) => `<div class="obj ${v >= n ? "met" : ""}"><div class="top"><span>${esc(l)}</span><span>${Math.min(v, n)}/${n}${v >= n ? " ✓" : ""}</span></div>
       <div class="bar"><i style="transform:scaleX(${Math.min(1, v / n)})"></i></div></div>`).join("")}
-    ${w.cleared ? `<div class="cleared">DUNGEON CLEARED</div>` : ""}`;
+    ${w.cleared ? `<div class="cleared">DUNGEON CLEARED</div>` : w.sealed ? `<div class="cleared" style="color:var(--gold);border-color:var(--gold)">GATE SEALED · PAUSE MODE</div>` : ""}`;
 }
 function renderDlog() {
   const list = [...G.dungeons].reverse();
   $("dlog").innerHTML = list.length ? list.map(w => {
     const open = w.end >= today() && !w.cleared;
+    if (w.sealed && !w.cleared) return `<div><span>⏸</span><span>${w.rank}-Rank ${esc(w.name)} <small class="sub">${short(w.mon)}</small></span><span>sealed</span></div>`;
     return `<div><span>${w.cleared ? "✅" : open ? "⏳" : "💀"}</span><span>${w.rank}-Rank ${esc(w.name)} <small class="sub">${short(w.mon)}</small></span><span>${w.cleared ? "+" + w.reward : open ? "open" : "failed"}</span></div>`;
   }).join("") : `<p class="sub">Your first gate opens this week.</p>`;
 }
@@ -1028,9 +1049,9 @@ function renderHeat() {
       lastMonth = parse(k).getMonth(); add(s, "text", { x, y: 9 }, MON[lastMonth]);
     }
     const lvl = !day || !day.n ? 0 : Math.min(5, Math.ceil(day.n / G.total * 5));
-    const r = add(s, "rect", { x, y, width: cell, height: cell, rx: 2, fill: HEAT[lvl], stroke: k === end ? "#4fc3ff" : "none" });
+    const r = add(s, "rect", { x, y, width: cell, height: cell, rx: 2, fill: day?.paused && !day.n ? "#2a2414" : HEAT[lvl], stroke: k === end ? "#4fc3ff" : "none" });
     if (anim && w >= weeks - 12) { r.style.opacity = 0; (cols[w - (weeks - 12)] ||= []).push(r); }
-    const show = e => { showTip(e.clientX, e.clientY, `<div class="h">${nice(k)}</div>${day ? `<b>${day.n}/${G.total}</b> · grade ${day.grade} · ${day.xp} XP` : "not tracked"}`); };
+    const show = e => { showTip(e.clientX, e.clientY, `<div class="h">${nice(k)}</div>${day ? `${day.paused ? "⏸ paused · " : ""}<b>${day.n}/${G.total}</b> · grade ${day.grade} · ${day.xp} XP` : "not tracked"}`); };
     r.addEventListener("pointermove", show);
     r.addEventListener("click", () => { if (day) { view = k; go("today"); toast(`Opened ${nice(k)}`); } });
     r.addEventListener("pointerleave", hideTip);
@@ -1160,6 +1181,11 @@ function renderSettings() {
   qdraft = structuredClone(D.quests); drawQEdit(); renderSyncInfo(); renderPush(); renderGoalEdit();
   const n = { evening: "20:30", late: "22:30", morning: "09:00", ...(D.notify || {}) };
   $("n-evening").value = n.evening; $("n-late").value = n.late; $("n-morning").value = n.morning; $("n-off").checked = !!n.off;
+  const ap = activePause(), used = (D.pauses || []).filter(p => p.from >= addDays(today(), -365))
+    .reduce((a, p) => a + Math.max(0, (parse(p.to && p.to < today() ? p.to : today()) - parse(p.from)) / 864e5 + 1), 0);
+  $("pauseinfo").textContent = ap ? `Paused since ${nice(ap.from)}${ap.to ? `, back on ${nice(addDays(ap.to, 1))}` : " until you resume"}.`
+    : `For travel or illness: no penalties, no reminders, streaks frozen, and that week's dungeon is sealed. ${Math.round(used)} paused days in the last year.`;
+  $("pz-on").disabled = !!ap;
   $("decayinfo").textContent = D.rules?.decayFrom ? `Penalties count from ${nice(D.rules.decayFrom)}. Earlier history isn't penalised.` : "Penalties start once you connect to your server.";
 }
 function drawQEdit() {
@@ -1190,6 +1216,23 @@ $("p-save").onclick = () => {
   change({ op: "profile", name: $("p-name").value.trim() || "Hunter", goal: $("p-goal").value.trim(), deadline: $("p-dl").value });
   compute(); renderAll(); toast("Hunter profile saved.");
 };
+
+/* ---------- pause mode ---------- */
+$("pz-on").onclick = () => {
+  const to = $("pz-to").value;
+  if (to && to < today()) return toast("The return date is in the past.");
+  if (!confirm(to ? `Pause until ${nice(to)}?` : "Pause until you resume?")) return;
+  change({ op: "pauses", pauses: [...(D.pauses || []), { from: today(), to: to || "" }] });
+  compute(); renderAll(); toast("Pause mode on. The System will wait for you.");
+};
+document.addEventListener("click", e => {
+  if (!e.target.closest("[data-resume]")) return;
+  const ap = activePause(); if (!ap) return toast("Not paused.");
+  const ps = (D.pauses || []).map(p => ({ ...p })), i = (D.pauses || []).indexOf(ap);
+  if (ap.from === today()) ps.splice(i, 1); else ps[i].to = addDays(today(), -1);   // today counts again
+  change({ op: "pauses", pauses: ps });
+  compute(); renderAll(); toast("Welcome back, Hunter. Today's quests count again.");
+});
 
 /* ---------- reminders (web push) ---------- */
 const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
