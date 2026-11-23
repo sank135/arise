@@ -956,6 +956,8 @@ function connect(code) {
     const j = JSON.parse(atob(code.trim().replace(/-/g, "+").replace(/_/g, "/")));
     if (!j.k || !j.t) throw 0;
     syncCfg = { k: j.k, t: j.t, url: null }; store.set("hunter-sync", syncCfg);
+    // first connection: the server's quest list wins over this phone's starter list
+    if (!store.get("hunter-last-sync", 0)) { pending = pending.filter(op => op.op !== "quests"); store.set("hunter-pending", pending); }
     syncState = "wait"; renderSyncInfo(); toast("Connecting to your server…"); sync();
     return true;
   } catch { toast("That setup code doesn't look right."); return false; }
