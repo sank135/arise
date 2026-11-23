@@ -222,6 +222,65 @@ nav button.on { color: var(--glow); }
 .penalty h2 { color: var(--bad); border-bottom-color: rgba(255,93,108,.2); }
 .penalty h2::before { background: var(--bad); }
 
+/* priority goal */
+.goal { border-color: #6b5313; background: linear-gradient(180deg, rgba(40,30,8,.94), rgba(14,11,5,.94)); }
+.goal::before, .goal::after { border-color: var(--gold); }
+.goal h2 { color: var(--gold); border-bottom-color: rgba(255,207,92,.2); }
+.goal h2::before { background: var(--gold); }
+.goal .gt { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+.clock { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; text-align: center; }
+.clock div b { display: block; font-family: var(--mono); font-size: 24px; font-weight: 700; background: #0c0a05; border: 1px solid #3a2e10;
+  border-radius: 3px; padding: 8px 0; position: relative; overflow: hidden; }
+.clock div b::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid rgba(0,0,0,.6); }
+.clock div b.flip { animation: flip 260ms var(--ease-out); }
+@keyframes flip { from { transform: perspective(200px) rotateX(-70deg); opacity: .3; } }
+.clock div span { font-size: 10px; color: var(--dim); letter-spacing: .06em; text-transform: uppercase; }
+.gbar { position: relative; height: 12px; background: #120f06; border: 1px solid #3a2e10; border-radius: 2px; margin: 16px 0 6px; overflow: visible; }
+.gbar i { position: absolute; inset: 0; transform-origin: left; background: linear-gradient(90deg, #c98500, var(--gold)); box-shadow: 0 0 12px rgba(255,207,92,.45); }
+.gbar em { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #fff; opacity: .8; }
+.gline { display: flex; font-size: 12.5px; font-family: var(--mono); color: var(--dim); gap: 8px; flex-wrap: wrap; }
+.gline b { color: var(--text); }
+.gline .ahead { color: var(--good); } .gline .behind { color: var(--bad); }
+.goal details { margin-top: 12px; }
+.goal summary { cursor: pointer; font-size: 13px; color: var(--gold); list-style: none; padding: 6px 0; }
+.goal summary::-webkit-details-marker { display: none; }
+.ms { display: flex; align-items: center; gap: 10px; padding: 10px 2px; border-bottom: 1px solid #2a2310; font-size: 14px; cursor: pointer; }
+.ms input { width: 20px; height: 20px; accent-color: var(--gold); flex: none; }
+.ms.done span { color: var(--dim); text-decoration: line-through; }
+.ms small { margin-left: auto; color: var(--dim); font-family: var(--mono); font-size: 11px; }
+/* dungeon */
+.dun .gate { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.dun .gate .rk { width: 44px; height: 50px; display: grid; place-items: center; font-weight: 800; font-size: 22px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: linear-gradient(160deg, color-mix(in srgb, currentColor 30%, #0a1120), #070b14 80%); }
+.dun .gate b { display: block; font-size: 15px; }
+.obj { margin-bottom: 10px; }
+.obj .top { display: flex; font-size: 13px; margin-bottom: 4px; }
+.obj .top span:last-child { margin-left: auto; font-family: var(--mono); color: var(--dim); }
+.obj .bar { margin-top: 0; height: 6px; }
+.obj .bar i { box-shadow: none; }
+.obj .bar i::after { display: none; }
+.obj.met .top span:last-child { color: var(--good); }
+.cleared { margin-top: 6px; text-align: center; font-weight: 800; letter-spacing: .2em; color: var(--good); border: 1px solid var(--good); padding: 8px; border-radius: 3px; }
+.dlog { font-size: 13px; }
+.dlog div { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.dlog div span:last-child { margin-left: auto; font-family: var(--mono); }
+/* shop */
+.purse { display: flex; align-items: center; gap: 14px; }
+.purse .coin { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 26px;
+  background: radial-gradient(circle at 35% 30%, #ffe39a, #c98500 70%); box-shadow: 0 0 18px rgba(255,207,92,.35); }
+.purse b { display: block; font-size: 30px; font-family: var(--mono); color: var(--gold); }
+.items { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.item { background: var(--panel2); border: 1px solid var(--line); border-radius: 3px; padding: 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.item .e { font-size: 26px; }
+.item b { font-size: 14px; }
+.item .btn { margin-top: auto; padding: 8px; min-height: 40px; font-family: var(--mono); color: var(--gold); border-color: #6b5313; }
+.item .btn:disabled { opacity: .4; }
+.hist div { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.hist div small { color: var(--dim); font-family: var(--mono); }
+.hist div span.c { margin-left: auto; font-family: var(--mono); color: var(--gold); }
+.hist button { background: none; border: 1px solid var(--line); border-radius: 3px; color: var(--dim); padding: 4px 8px; font-size: 12px; }
+textarea.big { width: 100%; min-height: 160px; background: #08101e; border: 1px solid var(--line); border-radius: 3px; padding: 10px; font: inherit; font-size: 16px; color: inherit; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
   body::before, .bar i::after { display: none; }
@@ -235,6 +294,7 @@ nav button.on { color: var(--glow); }
   <!-- QUESTS -->
   <section class="tab on" id="t-today">
     <div class="win" id="card"></div>
+    <div id="goal"></div>
     <div id="penalty"></div>
     <div class="win" id="qwin">
       <h2>Daily Quests <span class="r" id="reset"></span></h2>
@@ -247,7 +307,19 @@ nav button.on { color: var(--glow); }
       <div id="quests"></div>
       <div class="dayfoot"><div class="grade" id="grade"></div><div class="sub" id="dayinfo"></div></div>
     </div>
+    <div class="win dun" id="dungeon"></div>
     <div class="win"><h2>Stats</h2><div class="chart" id="c-radar"></div></div>
+  </section>
+
+  <!-- SHOP -->
+  <section class="tab" id="t-shop">
+    <div class="win"><h2>Treasury</h2><div class="purse"><div class="coin">🪙</div><div><b id="gold"></b><span class="sub" id="goldsub"></span></div></div></div>
+    <div class="win"><h2>Reward shop <span class="r">earned rewards only</span></h2><div class="items" id="items"></div>
+      <details style="margin-top:12px"><summary class="sub" style="cursor:pointer;padding:6px 0">Edit rewards</summary>
+        <div id="shopedit" style="margin-top:10px"></div>
+        <div class="row2"><button class="btn" id="sh-add">+ Add reward</button><button class="btn pri" id="sh-save">Save rewards</button></div>
+      </details></div>
+    <div class="win"><h2>Purchases</h2><div class="hist" id="hist"></div></div>
   </section>
 
   <!-- GRAPHS -->
@@ -269,6 +341,7 @@ nav button.on { color: var(--glow); }
   <section class="tab" id="t-awards">
     <div class="win"><h2>Streaks <span class="r">4+ quests keeps the day</span></h2><table class="st" id="streaks"></table></div>
     <div class="win"><h2>Titles <span class="r" id="awcount"></span></h2><div class="aw" id="awards"></div></div>
+    <div class="win"><h2>Dungeon log</h2><div class="dlog" id="dlog"></div></div>
   </section>
 
   <!-- SYSTEM -->
@@ -278,6 +351,16 @@ nav button.on { color: var(--glow); }
       <label class="field"><span>GOAL</span><input id="p-goal" maxlength="120" enterkeyhint="done"></label>
       <label class="field"><span>GOAL DEADLINE</span><input id="p-dl" type="date"></label>
       <button class="btn pri" id="p-save">Save profile</button>
+    </div>
+    <div class="win"><h2>Priority goal</h2>
+      <label class="field"><span>GOAL</span><input id="g-title" maxlength="80" enterkeyhint="done"></label>
+      <label class="field"><span>DEADLINE</span><input id="g-dl" type="datetime-local"></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <label class="field"><span>COMPLETION REWARD (XP)</span><input id="g-rew" type="number" inputmode="numeric" min="0" max="5000"></label>
+        <label class="field"><span>XP PER MILESTONE</span><input id="g-mxp" type="number" inputmode="numeric" min="0" max="500"></label>
+      </div>
+      <label class="field"><span>MILESTONES (one per line; ticked ones stay ticked)</span><textarea class="big" id="g-ms"></textarea></label>
+      <div class="row2"><button class="btn pri" id="g-save">Save goal</button><button class="btn red" id="g-clear">Remove goal</button></div>
     </div>
     <div class="win"><h2>Quests <span class="r">removed quests keep their history</span></h2>
       <div id="qedit"></div>
@@ -316,6 +399,7 @@ nav button.on { color: var(--glow); }
 <nav id="nav">
   <button data-t="today" class="on"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg>QUESTS</button>
   <button data-t="graphs"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-7"/></svg>GRAPHS</button>
+  <button data-t="shop"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>SHOP</button>
   <button data-t="awards"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>TITLES</button>
   <button data-t="set"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 20.5 7v10L12 22l-8.5-5V7Z"/><circle cx="12" cy="12" r="3"/></svg>SYSTEM</button>
 </nav>
@@ -365,6 +449,11 @@ function applyOp(data, op) {
     op.v ? s.add(op.q) : s.delete(op.q);
     if (s.size) data.days[op.d] = [...s].sort(); else delete data.days[op.d];
   } else if (op.op === "quests") data.quests = op.quests;
+  else if (op.op === "goal") data.goal = { title: op.title, deadline: op.deadline, start: op.start, milestones: op.milestones, reward: op.reward, mxp: op.mxp };
+  else if (op.op === "milestone") { for (const m of data.goal?.milestones || []) if (m.id === op.id) m.done = op.v ? op.d : ""; }
+  else if (op.op === "shop") data.shop = op.items;
+  else if (op.op === "buy") data.buys = [...(data.buys || []).filter(b => b.id !== op.id), { id: op.id, d: op.d, name: op.name, icon: op.icon, cost: op.cost }];
+  else if (op.op === "unbuy") data.buys = (data.buys || []).filter(b => b.id !== op.id);
   else if (op.op === "notify") data.notify = { off: !!op.off, evening: op.evening, late: op.late, morning: op.morning };
   else if (op.op === "profile") {
     data.profile = { name: op.name, goal: op.goal, deadline: op.deadline, since: data.profile.since || "" };
@@ -406,16 +495,33 @@ function compute() {
   for (const k in D.days) if (k < start) start = k;
   const days = [];
   const decayFrom = D.rules?.decayFrom || "";
-  let cum = 0, miss = 0;
+  // priority goal: XP per milestone on the day it was ticked, the big reward on the day the last one was
+  const goalXp = {}, gl = D.goal, ms = gl?.milestones || [];
+  for (const m of ms) if (m.done) goalXp[m.done] = (goalXp[m.done] || 0) + (gl.mxp || 0);
+  const goalDone = ms.length && ms.every(m => m.done) ? ms.map(m => m.done).sort().pop() : "";
+  if (goalDone) goalXp[goalDone] = (goalXp[goalDone] || 0) + (gl.reward || 0);
+  if (goalDone && goalDone < start) start = goalDone;
+  let cum = 0, miss = 0, gold = 0, wk = null;
+  const dungeons = [];
   for (let k = start; k <= t; k = addDays(k, 1)) {
     const done = (D.days[k] || []).filter(id => ids.has(id));
     const n = done.length, xp = n * 10 + (n === total && total ? 20 : 0), ok = kept(n, total);
     // decay: every finished day that isn't kept costs XP, more for each missed day in a row (20, 40 … 100)
     let pen = 0;
     if (decayFrom && k >= decayFrom && k < t) { miss = ok ? 0 : miss + 1; pen = Math.min(20 * miss, 100); }
-    cum = Math.max(0, cum + xp - pen);
-    days.push({ k, done, n, xp, pen, miss, net: xp - pen, cum, grade: gradeOf(n, total), kept: ok });
+    // weekly dungeon: a new gate every Monday, ranked by your level at that moment
+    let dun = 0;
+    if (decayFrom && k >= decayFrom && total) {
+      if (!wk || parse(k).getDay() === 1) { wk = makeDungeon(mondayOf(k), levelOf(cum), Q); dungeons.push(wk); }
+      wk.kept += ok; wk.full += n === total; wk.qc += done.includes(wk.quest.id);
+      if (!wk.cleared && dungeonMet(wk)) { wk.cleared = k; dun = wk.reward; }
+    }
+    const bonus = (goalXp[k] || 0) + dun;
+    cum = Math.max(0, cum + xp + bonus - pen);
+    if (decayFrom && k >= decayFrom) gold += xp + bonus;
+    days.push({ k, done, n, xp, bonus, gxp: goalXp[k] || 0, dun, pen, miss, net: xp + bonus - pen, cum, grade: gradeOf(n, total), kept: ok });
   }
+  const spent = (D.buys || []).reduce((a, b) => a + (b.cost || 0), 0);
   const level = levelOf(cum), rank = rankOf(level);
   const streak = runOf(days, d => d.kept);
   const stats = Object.fromEntries(STATS.map(s => [s, 0]));
@@ -425,7 +531,8 @@ function compute() {
     stats[q.stat] = (stats[q.stat] || 0) + c;
     per[q.id] = { count: c, ...runOf(days, d => d.done.includes(q.id)) };
   }
-  G = { Q, total, days, xp: cum, level, rank, streak, stats, per, byKey: Object.fromEntries(days.map(d => [d.k, d])) };
+  G = { Q, total, days, xp: cum, level, rank, streak, stats, per, dungeons, gold: gold - spent, earned: gold, spent, goalDone,
+    byKey: Object.fromEntries(days.map(d => [d.k, d])) };
 }
 // current run (today only counts once it passes) and best run
 function runOf(days, ok) {
@@ -436,6 +543,21 @@ function runOf(days, ok) {
   for (; i >= 0 && ok(days[i]); i--) cur++;
   return { cur, best };
 }
+
+/* ---------- weekly dungeon ---------- */
+const mondayOf = k => addDays(k, -((parse(k).getDay() + 6) % 7));
+const GATES = ["Red Gate", "Ice Elf Dungeon", "Demon Castle", "Cartenon Temple", "Goblin Den", "Orc Fortress", "Spider Nest",
+  "Insect Gate", "Naga Lair", "Ant Island", "Instant Dungeon", "Knight's Keep", "Hall of Trials", "Frost Citadel"];
+const BOSSES = ["Igris the Blood-Red", "Baruka", "Vulcan", "Kargalgan", "Kamish", "the Ant King", "Metus", "Tusk", "Iron", "Beru"];
+const DUNGEON = {   // per rank: [days kept, chosen-quest days, full clears, XP & Gold reward]
+  E: [4, 3, 0, 100], D: [5, 4, 1, 150], C: [5, 5, 2, 200], B: [6, 5, 3, 300], A: [7, 6, 4, 450], S: [7, 7, 6, 600] };
+function seeded(str) { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296; }
+function makeDungeon(mon, level, Q) {
+  const rank = rankOf(level)[0], [kn, qn, fn, reward] = DUNGEON[rank], rnd = seeded(mon);
+  return { mon, end: addDays(mon, 6), rank, reward, name: GATES[Math.floor(rnd() * GATES.length)], boss: BOSSES[Math.floor(rnd() * BOSSES.length)],
+    quest: Q[Math.floor(rnd() * Q.length)], need: { kept: kn, qc: qn, full: fn }, kept: 0, qc: 0, full: 0, cleared: "" };
+}
+const dungeonMet = w => w.kept >= w.need.kept && w.qc >= w.need.qc && w.full >= w.need.full;
 
 /* ---------- motion helpers ---------- */
 function countTo(el, from, to, ms = 400) {
@@ -484,7 +606,7 @@ function renderCard() {
     <div class="chips">
       <span class="chip ${streak.cur ? "hot" : ""}">🔥 ${streak.cur} day streak</span>
       <span class="chip">⚡ <span id="xptoday">${t ? t.xp : 0}</span> XP today</span>
-      ${goal}${sync}
+      <span class="chip" style="color:var(--gold);border-color:#6b5313">🪙 ${G.gold.toLocaleString()}</span>${goal}${sync}
     </div>
     ${D.profile.goal ? `<div class="sub" style="margin-top:12px">🎯 ${esc(D.profile.goal)}</div>` : ""}`;
   // tick: fill the bar from where it was and count the numbers up
@@ -544,7 +666,12 @@ $("quests").addEventListener("change", e => {
   fx.barFrom = Math.min(1, (G.xp - xpFor(G.level)) / (xpFor(G.level + 1) - xpFor(G.level)));
   fx.xpFrom = G.xp; fx.todayFrom = G.byKey[today()]?.xp || 0;
   change({ op: "tick", d: view, q, v: on });
-  compute(); renderCard(); renderQuests();
+  compute(); renderCard(); renderQuests(); renderDungeon();
+  const wNow = G.dungeons[G.dungeons.length - 1];
+  if (on && wNow?.cleared === today() && wNow.cleared && !fx.dunToasted?.[wNow.mon]) {
+    (fx.dunToasted ||= {})[wNow.mon] = 1;
+    setTimeout(() => overlay("DUNGEON CLEARED", `${wNow.rank}-Rank ${esc(wNow.name)}: ${esc(wNow.boss)} defeated.<br>+${wNow.reward} XP and Gold`, `+${wNow.reward}`, "var(--good)"), 700);
+  }
   if (!on) store.set("hunter-seen", { level: G.level, rank: G.rank[0] });   // unticking isn't a "level down" event
   if (tab === "today") renderRadar();
   if (!on) return;
@@ -608,6 +735,140 @@ function overlay(title, line, value, color, from) {
     setTimeout(() => ov.classList.remove("on", "out"), RM ? 0 : 180);
   };
 }
+
+/* ---------- priority goal ---------- */
+function goalLeft() {
+  const g = D.goal; if (!g?.deadline) return null;
+  const end = new Date(g.deadline.length === 10 ? g.deadline + "T23:59" : g.deadline), now = new Date();
+  if (end <= now) return { past: true, parts: [0, 0, 0, 0, 0, 0] };
+  let months = 0; const c = new Date(now);
+  while (true) { const n = new Date(c); n.setMonth(n.getMonth() + 1); if (n > end) break; c.setTime(n); months++; }
+  let ms = end - c; const sec = Math.floor(ms / 1000), days = Math.floor(sec / 86400);
+  return { past: false, parts: [months, Math.floor(days / 7), days % 7, Math.floor(sec / 3600) % 24, Math.floor(sec / 60) % 60, sec % 60] };
+}
+function renderGoal() {
+  const g = D.goal, el = $("goal");
+  if (!g?.title) { el.innerHTML = ""; return; }
+  const ms = g.milestones || [], done = ms.filter(m => m.done).length, pct = ms.length ? done / ms.length : 0;
+  const s0 = parse(g.start || today()), e0 = new Date(g.deadline.length === 10 ? g.deadline + "T23:59" : g.deadline);
+  const pace = Math.max(0, Math.min(1, (Date.now() - s0) / (e0 - s0 || 1))), expect = pace * ms.length, diff = done - expect;
+  const left = goalLeft(), labels = ["Month", "Week", "Day", "Hours", "Min", "Sec"];
+  const status = G.goalDone ? `<span class="ahead">✔ complete · +${(g.reward || 0).toLocaleString()} XP earned</span>`
+    : left?.past ? `<span class="behind">deadline passed</span>`
+    : Math.abs(diff) < .5 ? "on pace" : diff > 0 ? `<span class="ahead">▲ ${diff.toFixed(1)} ahead of pace</span>` : `<span class="behind">▼ ${(-diff).toFixed(1)} behind pace</span>`;
+  el.innerHTML = `<div class="win goal"><h2>Priority quest <span class="r">reward ${(g.reward || 0).toLocaleString()} XP</span></h2>
+    <div class="gt">${esc(g.title)}</div>
+    <div class="clock" id="clock">${labels.map((l, i) => `<div><b data-i="${i}">${pad(left ? left.parts[i] : 0)}</b><span>${l}</span></div>`).join("")}</div>
+    <div class="gbar"><i style="transform:scaleX(${pct})"></i><em style="left:calc(${(pace * 100).toFixed(2)}% - 1px)" title="where you should be"></em></div>
+    <div class="gline"><span><b>${done}/${ms.length}</b> milestones · <b>${Math.round(pct * 100)}%</b></span><span style="margin-left:auto">${status}</span></div>
+    <details id="msbox" ${store.get("ms-open", false) ? "open" : ""}><summary>▸ Milestones (+${g.mxp || 0} XP each)</summary>
+      ${ms.map(m => `<label class="ms ${m.done ? "done" : ""}"><input type="checkbox" data-m="${esc(m.id)}" ${m.done ? "checked" : ""}><span>${esc(m.name)}</span>${m.done ? `<small>${short(m.done)}</small>` : ""}</label>`).join("")}
+    </details></div>`;
+  $("msbox").ontoggle = e => store.set("ms-open", e.target.open);
+}
+function tickClock() {
+  const left = goalLeft(); if (!left) return;
+  document.querySelectorAll("#clock b").forEach(b => {
+    const v = pad(left.parts[b.dataset.i]);
+    if (b.textContent !== v) { b.textContent = v; if (!RM && !document.hidden) { b.classList.remove("flip"); void b.offsetWidth; b.classList.add("flip"); } }
+  });
+}
+$("goal").addEventListener("change", e => {
+  const id = e.target.dataset.m; if (!id) return;
+  const before = { level: G.level, rank: G.rank[0], done: !!G.goalDone };
+  fx.barFrom = Math.min(1, (G.xp - xpFor(G.level)) / (xpFor(G.level + 1) - xpFor(G.level))); fx.xpFrom = G.xp;
+  change({ op: "milestone", id, v: e.target.checked, d: today() });
+  compute(); renderCard(); renderGoal();
+  if (!e.target.checked) { store.set("hunter-seen", { level: G.level, rank: G.rank[0] }); return; }
+  const r = e.target.getBoundingClientRect();
+  floatText(`+${D.goal.mxp || 0} XP`, r.left + 30, r.top);
+  if (G.goalDone && !before.done) setTimeout(() => overlay("PRIORITY QUEST CLEARED", `${esc(D.goal.title)}<br>Reward: +${(D.goal.reward || 0).toLocaleString()} XP`, G.level, "var(--gold)", before.level), 400);
+  else if (G.rank[0] !== before.rank) setTimeout(() => overlay("RANK UP", "Hunter rank reassessed", G.rank[0], G.rank[2]), 400);
+  else if (G.level > before.level) setTimeout(() => overlay("LEVEL UP", "You have leveled up", G.level, "var(--text)", before.level), 400);
+  store.set("hunter-seen", { level: G.level, rank: G.rank[0] });
+});
+
+/* ---------- dungeon ---------- */
+function renderDungeon() {
+  const el = $("dungeon"), w = G.dungeons[G.dungeons.length - 1];
+  if (!w || w.end < today()) { el.innerHTML = `<h2>Weekly dungeon</h2><p class="sub">A gate opens every Monday.</p>`; return; }
+  const rc = RANKS.find(r => r[0] === w.rank)[2];
+  const end = parse(w.end); end.setHours(23, 59, 59);
+  const h = Math.max(0, Math.floor((end - new Date()) / 36e5));
+  const obj = [["Days kept", w.kept, w.need.kept], [`${w.quest.icon || ""} ${w.quest.name}`, w.qc, w.need.qc], ["Full clears", w.full, w.need.full]].filter(o => o[2] > 0);
+  el.innerHTML = `<h2>Weekly dungeon <span class="r">${w.cleared ? "cleared" : `closes in ${Math.floor(h / 24)}d ${h % 24}h`}</span></h2>
+    <div class="gate"><div class="rk" style="color:${rc}">${w.rank}</div><div><b>${w.rank}-Rank ${w.name}</b><span class="sub">Boss: ${w.boss} · reward +${w.reward} XP and Gold</span></div></div>
+    ${obj.map(([l, v, n]) => `<div class="obj ${v >= n ? "met" : ""}"><div class="top"><span>${esc(l)}</span><span>${Math.min(v, n)}/${n}${v >= n ? " ✓" : ""}</span></div>
+      <div class="bar"><i style="transform:scaleX(${Math.min(1, v / n)})"></i></div></div>`).join("")}
+    ${w.cleared ? `<div class="cleared">DUNGEON CLEARED</div>` : ""}`;
+}
+function renderDlog() {
+  const list = [...G.dungeons].reverse();
+  $("dlog").innerHTML = list.length ? list.map(w => {
+    const open = w.end >= today() && !w.cleared;
+    return `<div><span>${w.cleared ? "✅" : open ? "⏳" : "💀"}</span><span>${w.rank}-Rank ${esc(w.name)} <small class="sub">${short(w.mon)}</small></span><span>${w.cleared ? "+" + w.reward : open ? "open" : "failed"}</span></div>`;
+  }).join("") : `<p class="sub">Your first gate opens this week.</p>`;
+}
+
+/* ---------- shop ---------- */
+const DEFAULT_SHOP = [{ id: "s1", name: "Cheat meal", icon: "🍕", cost: 300 }, { id: "s2", name: "Movie night", icon: "🎬", cost: 250 }, { id: "s3", name: "1 hour of gaming", icon: "🎮", cost: 150 }];
+let shopDraft = [];
+function renderShop() {
+  const items = D.shop || DEFAULT_SHOP;
+  $("gold").textContent = G.gold.toLocaleString();
+  $("goldsub").textContent = `${G.earned.toLocaleString()} earned · ${G.spent.toLocaleString()} spent${D.rules?.decayFrom ? ` · since ${short(D.rules.decayFrom)}` : ""}`;
+  $("items").innerHTML = items.map(it => `<div class="item"><div class="e">${esc(it.icon || "🎁")}</div><b>${esc(it.name)}</b>
+    <button class="btn" data-buy="${esc(it.id)}" ${G.gold < it.cost ? "disabled" : ""}>🪙 ${it.cost.toLocaleString()}</button></div>`).join("");
+  const buys = [...(D.buys || [])].reverse();
+  $("hist").innerHTML = buys.length ? buys.slice(0, 40).map(b => `<div><span>${esc(b.icon || "🎁")}</span><span>${esc(b.name)}<br><small>${nice(b.d)}</small></span><span class="c">−${b.cost}</span>
+    ${b.d === today() ? `<button data-undo="${esc(b.id)}">Undo</button>` : ""}</div>`).join("") : `<p class="sub">Nothing bought yet. Earn Gold by clearing quests, dungeons and milestones.</p>`;
+  if (!document.activeElement?.closest("#shopedit")) { shopDraft = structuredClone(items); drawShopEdit(); }
+}
+function drawShopEdit() {
+  $("shopedit").innerHTML = shopDraft.map((it, i) => `<div class="qrow" data-i="${i}" style="grid-template-columns:52px 1fr 84px 44px">
+    <input class="ic" value="${esc(it.icon || "")}" data-f="icon" maxlength="4" aria-label="Icon"><input value="${esc(it.name)}" data-f="name" maxlength="40" aria-label="Reward">
+    <input value="${it.cost}" data-f="cost" type="number" inputmode="numeric" min="1" aria-label="Cost"><button data-del aria-label="Remove">✕</button></div>`).join("");
+}
+$("items").addEventListener("click", e => {
+  const b = e.target.closest("[data-buy]"); if (!b) return;
+  const it = (D.shop || DEFAULT_SHOP).find(x => x.id === b.dataset.buy); if (!it || G.gold < it.cost) return;
+  if (!confirm(`Buy "${it.name}" for ${it.cost} Gold?`)) return;
+  change({ op: "buy", id: "b" + Date.now().toString(36), d: today(), name: it.name, icon: it.icon, cost: it.cost });
+  compute(); renderShop(); renderCard();
+  toast(`Reward unlocked: ${esc(it.name)}. You earned it, Hunter.`);
+});
+$("hist").addEventListener("click", e => {
+  const b = e.target.closest("[data-undo]"); if (!b) return;
+  change({ op: "unbuy", id: b.dataset.undo }); compute(); renderShop(); renderCard(); toast("Purchase undone, Gold refunded.");
+});
+$("shopedit").addEventListener("input", e => { const r = e.target.closest(".qrow"); if (r && e.target.dataset.f) shopDraft[r.dataset.i][e.target.dataset.f] = e.target.dataset.f === "cost" ? Math.max(1, +e.target.value || 1) : e.target.value; });
+$("shopedit").addEventListener("click", e => { if (!e.target.closest("[data-del]")) return; shopDraft.splice(e.target.closest(".qrow").dataset.i, 1); drawShopEdit(); });
+$("sh-add").onclick = () => { if (shopDraft.length >= 24) return; shopDraft.push({ id: "s" + Date.now().toString(36), name: "New reward", icon: "🎁", cost: 200 }); drawShopEdit(); };
+$("sh-save").onclick = () => { change({ op: "shop", items: shopDraft.map(x => ({ ...x, cost: Math.max(1, +x.cost || 1) })) }); compute(); renderShop(); toast("Rewards saved."); };
+
+/* ---------- goal editor ---------- */
+function renderGoalEdit() {
+  const g = D.goal || {};
+  $("g-title").value = g.title || ""; $("g-dl").value = g.deadline ? (g.deadline.length === 10 ? g.deadline + "T23:59" : g.deadline) : "";
+  $("g-rew").value = g.reward ?? 1000; $("g-mxp").value = g.mxp ?? 50;
+  $("g-ms").value = (g.milestones || []).map(m => m.name).join("\n");
+}
+$("g-save").onclick = () => {
+  const title = $("g-title").value.trim(), dl = $("g-dl").value;
+  if (!title || !dl) return toast("Give the goal a name and a deadline.");
+  const old = D.goal?.milestones || [];
+  const milestones = $("g-ms").value.split("\n").map(x => x.trim()).filter(Boolean).slice(0, 60).map((name, i) => {
+    const m = old.find(o => o.name === name);
+    return m ? { ...m } : { id: "m" + Date.now().toString(36) + i, name, done: "" };
+  });
+  if (!milestones.length) return toast("Add at least one milestone.");
+  change({ op: "goal", title, deadline: dl, start: D.goal?.start || today(), milestones, reward: Math.max(0, Math.min(5000, +$("g-rew").value || 0)), mxp: Math.max(0, Math.min(500, +$("g-mxp").value || 0)) });
+  compute(); renderAll(); toast("Priority goal set.");
+};
+$("g-clear").onclick = () => {
+  if (!D.goal?.title || !confirm("Remove the priority goal? XP already earned from it will be removed too.")) return;
+  change({ op: "goal", title: "", deadline: "", start: "", milestones: [], reward: 0, mxp: 0 }); compute(); renderAll();
+};
 
 /* ---------- svg helpers ---------- */
 const NS = "http://www.w3.org/2000/svg";
@@ -880,6 +1141,9 @@ function renderAwards() {
     ["💪", "Iron Body", "One stat at 100", maxStat, 100],
     ["🧠", "Grand Sage", "One stat at 365", maxStat, 365],
     ["✨", "10,000 XP", "Earn 10,000 XP", G.xp, 10000],
+    ["🚪", "Gate Breaker", "Clear your first weekly dungeon", G.dungeons.filter(w => w.cleared).length, 1],
+    ["🏰", "Dungeon Master", "Clear 10 weekly dungeons", G.dungeons.filter(w => w.cleared).length, 10],
+    ["🎯", "Priority Slayer", "Complete a priority goal", G.goalDone ? 1 : 0, 1],
     ["🪷", "Nirvana", "365 full clears in a row: every quest, every day, for a year", fullRun, 365],
   ];
   // unlocked first, then the closest to unlocking
@@ -893,7 +1157,7 @@ function renderAwards() {
 let qdraft = [];
 function renderSettings() {
   $("p-name").value = D.profile.name || ""; $("p-goal").value = D.profile.goal || ""; $("p-dl").value = D.profile.deadline || "";
-  qdraft = structuredClone(D.quests); drawQEdit(); renderSyncInfo(); renderPush();
+  qdraft = structuredClone(D.quests); drawQEdit(); renderSyncInfo(); renderPush(); renderGoalEdit();
   const n = { evening: "20:30", late: "22:30", morning: "09:00", ...(D.notify || {}) };
   $("n-evening").value = n.evening; $("n-late").value = n.late; $("n-morning").value = n.morning; $("n-off").checked = !!n.off;
   $("decayinfo").textContent = D.rules?.decayFrom ? `Penalties count from ${nice(D.rules.decayFrom)}. Earlier history isn't penalised.` : "Penalties start once you connect to your server.";
@@ -1100,7 +1364,9 @@ function checkDrop() {
 }
 function renderAll() {
   renderCard(); renderQuests();
-  if (tab === "today") renderRadar();
+  if (tab === "today") { renderGoal(); renderDungeon(); renderRadar(); }
+  if (tab === "shop") renderShop();
+  if (tab === "awards") renderDlog();
   if (tab === "graphs") { renderKpis(); renderXp(); renderBars(); renderHeat(); renderRate(); renderWeek(); renderGrades(); }
   if (tab === "awards") renderAwards();
   if (tab === "set" && !document.activeElement?.closest("#t-set")) renderSettings();
@@ -1108,7 +1374,7 @@ function renderAll() {
 }
 let lastDay = today();
 setInterval(() => {
-  tickReset();
+  tickReset(); if (tab === "today") tickClock();
   if (today() !== lastDay) { if (view === lastDay) view = today(); lastDay = today(); compute(); renderAll(); }
 }, 1000);
 let lastW = innerWidth;
