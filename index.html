@@ -283,6 +283,24 @@ nav button.on { color: var(--glow); }
       <div id="qedit"></div>
       <div class="row2"><button class="btn" id="q-add">+ Add quest</button><button class="btn pri" id="q-save">Save quests</button></div>
     </div>
+    <div class="win"><h2>Reminders</h2>
+      <p class="sub" id="pushinfo" style="margin-bottom:12px"></p>
+      <div class="row2" style="margin-bottom:12px"><button class="btn pri" id="n-on">Turn on reminders</button><button class="btn" id="n-test">Send a test</button></div>
+      <label class="field"><span>EVENING CHECK (if you're behind)</span><input id="n-evening" type="time"></label>
+      <label class="field"><span>LAST CALL (if still behind)</span><input id="n-late" type="time"></label>
+      <label class="field"><span>MORNING REPORT (penalties and level drops)</span><input id="n-morning" type="time"></label>
+      <label class="field" style="display:flex;align-items:center;gap:10px"><input id="n-off" type="checkbox" style="width:auto;min-height:0"><span style="margin:0">Pause all reminders</span></label>
+      <button class="btn pri" id="n-save">Save times</button>
+    </div>
+    <div class="win"><h2>System rules</h2>
+      <div class="sub" style="line-height:1.6">
+        • Each quest +10 XP, a full clear +20 bonus.<br>
+        • A day is <b>kept</b> with at least 4 of 6 quests (two-thirds).<br>
+        • Every finished day that isn't kept costs XP: −20, then −40, −60, −80 and up to −100 for each further missed day in a row. Your level and rank drop when your XP does.<br>
+        • Keeping a day resets the penalty back to −20.<br>
+        • <span id="decayinfo"></span>
+      </div>
+    </div>
     <div class="win"><h2>Sync</h2>
       <p class="sub" id="syncinfo" style="margin-bottom:12px"></p>
       <label class="field"><span>SETUP CODE (from the server's /hunter page)</span><input id="s-code" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="text" enterkeyhint="done"></label>
@@ -333,6 +351,7 @@ const DEFAULT = {
     { id: "discipline", name: "Discipline", icon: "🛡️", stat: "WILL", color: 5 },
   ],
   days: {},
+  rules: { decayFrom: "" },
 };
 let base = store.get("hunter-data", null) || structuredClone(DEFAULT);   // last copy the server confirmed
 let pending = store.get("hunter-pending", []);                              // changes not yet synced
@@ -346,6 +365,7 @@ function applyOp(data, op) {
     op.v ? s.add(op.q) : s.delete(op.q);
     if (s.size) data.days[op.d] = [...s].sort(); else delete data.days[op.d];
   } else if (op.op === "quests") data.quests = op.quests;
+  else if (op.op === "notify") data.notify = { off: !!op.off, evening: op.evening, late: op.late, morning: op.morning };
   else if (op.op === "profile") {
     data.profile = { name: op.name, goal: op.goal, deadline: op.deadline, since: data.profile.since || "" };
   }
@@ -385,12 +405,16 @@ function compute() {
   let start = D.profile.since || t;
   for (const k in D.days) if (k < start) start = k;
   const days = [];
-  let cum = 0;
+  const decayFrom = D.rules?.decayFrom || "";
+  let cum = 0, miss = 0;
   for (let k = start; k <= t; k = addDays(k, 1)) {
     const done = (D.days[k] || []).filter(id => ids.has(id));
-    const n = done.length, xp = n * 10 + (n === total && total ? 20 : 0);
-    cum += xp;
-    days.push({ k, done, n, xp, cum, grade: gradeOf(n, total), kept: kept(n, total) });
+    const n = done.length, xp = n * 10 + (n === total && total ? 20 : 0), ok = kept(n, total);
+    // decay: every finished day that isn't kept costs XP, more for each missed day in a row (20, 40 … 100)
+    let pen = 0;
+    if (decayFrom && k >= decayFrom && k < t) { miss = ok ? 0 : miss + 1; pen = Math.min(20 * miss, 100); }
+    cum = Math.max(0, cum + xp - pen);
+    days.push({ k, done, n, xp, pen, miss, net: xp - pen, cum, grade: gradeOf(n, total), kept: ok });
   }
   const level = levelOf(cum), rank = rankOf(level);
   const streak = runOf(days, d => d.kept);
@@ -474,8 +498,13 @@ function renderCard() {
   fx.barFrom = fx.xpFrom = fx.todayFrom = null;
   // penalty: yesterday not kept
   const y = G.byKey[addDays(today(), -1)];
-  $("penalty").innerHTML = y && !y.kept && G.days.length > 1 ? `<div class="win penalty"><h2>Penalty Zone</h2>
-    <div class="sub">Daily quest incomplete yesterday (${y.n}/${G.total}, grade ${y.grade}). Clear at least ${Math.ceil(G.total * 4 / 6)} quests today to lift the penalty.</div></div>` : "";
+  const td = G.byKey[today()], needN = Math.ceil(G.total * 4 / 6);
+  const stake = Math.min(20 * ((y && !y.kept ? y.miss : 0) + 1), 100);
+  $("penalty").innerHTML = y && !y.kept && G.days.length > 1 ? `<div class="win penalty"><h2>Penalty Zone <span class="r">−${y.pen || 0} XP</span></h2>
+    <div class="sub">Yesterday wasn't kept (${y.n}/${G.total}, grade ${y.grade})${y.pen ? `: the System took <b style="color:var(--bad)">${y.pen} XP</b>` : ""}${y.miss > 1 ? `, ${y.miss} days in a row` : ""}.
+    ${td && td.kept ? "Today is kept. The slide has stopped." : `Clear ${needN - (td ? td.n : 0)} more today or lose ${stake} XP at midnight.`}</div></div>`
+    : D.rules?.decayFrom && td && !td.kept && new Date().getHours() >= 18 ? `<div class="win penalty"><h2>Behind schedule</h2>
+    <div class="sub">${td.n}/${G.total} today. Clear ${needN - td.n} more before midnight or lose ${stake} XP.</div></div>` : "";
 }
 function renderQuests() {
   const t = today(), d = G.byKey[view] || { done: [], n: 0, xp: 0, grade: "F" };
@@ -500,7 +529,7 @@ function renderQuests() {
   $("grade").textContent = d.grade;
   $("grade").style.color = GRADE_COL[d.grade];
   const left = G.total - d.n;
-  $("dayinfo").innerHTML = `<b>${d.n}/${G.total}</b> cleared · <b>${d.xp}</b> XP<br>${left === 0 ? "👑 Full clear · +20 bonus earned" : `${left} more for a full clear (+20 bonus)`}`;
+  $("dayinfo").innerHTML = `<b>${d.n}/${G.total}</b> cleared · <b>${d.xp}</b> XP${d.pen ? ` · <b style="color:var(--bad)">−${d.pen}</b> penalty` : ""}<br>${left === 0 ? "👑 Full clear · +20 bonus earned" : `${left} more for a full clear (+20 bonus)`}`;
 }
 function tickReset() {
   const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0);
@@ -516,6 +545,7 @@ $("quests").addEventListener("change", e => {
   fx.xpFrom = G.xp; fx.todayFrom = G.byKey[today()]?.xp || 0;
   change({ op: "tick", d: view, q, v: on });
   compute(); renderCard(); renderQuests();
+  if (!on) store.set("hunter-seen", { level: G.level, rank: G.rank[0] });   // unticking isn't a "level down" event
   if (tab === "today") renderRadar();
   if (!on) return;
   b.classList.remove("fresh"); void b.offsetWidth; b.classList.add("fresh");
@@ -609,7 +639,7 @@ let lastKpi = null;
 function renderKpis(animate) {
   const ds = inRange(), n = ds.length || 1;
   const prev = range ? G.days.slice(-2 * range, -range) : [];
-  const calc = a => ({ xp: a.reduce((s, d) => s + d.xp, 0), kept: a.length ? Math.round(a.filter(d => d.kept).length / a.length * 100) : 0, full: a.filter(d => d.n === G.total).length });
+  const calc = a => ({ xp: a.reduce((s, d) => s + d.net, 0), kept: a.length ? Math.round(a.filter(d => d.kept).length / a.length * 100) : 0, full: a.filter(d => d.n === G.total).length });
   const cur = calc(ds), old = prev.length === ds.length ? calc(prev) : null;
   const delta = k => {
     if (!old) return "";
@@ -618,7 +648,7 @@ function renderKpis(animate) {
     const v = k === "kept" ? Math.abs(d) + " pts" : old[k] ? Math.round(Math.abs(d) / old[k] * 100) + "%" : "new";
     return `<em class="${d > 0 ? "up" : "down"}">${d > 0 ? "▲" : "▼"} ${v}</em>`;
   };
-  $("kpis").innerHTML = [["xp", "XP earned", ""], ["kept", "days kept", "%"], ["full", "full clears", ""]]
+  $("kpis").innerHTML = [["xp", "net XP", ""], ["kept", "days kept", "%"], ["full", "full clears", ""]]
     .map(([k, l, u]) => `<div class="kpi"><b><span data-k="${k}">${cur[k].toLocaleString()}</span>${u}</b><span>${l}</span>${delta(k)}</div>`).join("");
   if (animate && lastKpi) for (const k of ["xp", "kept", "full"]) countTo($("kpis").querySelector(`[data-k="${k}"]`), lastKpi[k], cur[k]);
   lastKpi = cur;
@@ -670,7 +700,7 @@ function renderXp() {
     cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
     dot.setAttribute("cx", X(i)); dot.setAttribute("cy", Y(d.cum)); dot.setAttribute("visibility", "visible");
     showTip(r.left + X(i) * r.width / W, r.top + Y(d.cum) * r.height / H,
-      `<div class="h">${nice(d.k)}</div><b>${d.cum.toLocaleString()} XP</b> · LV ${levelOf(d.cum)}<br><span class="sub">+${d.xp} that day</span>`);
+      `<div class="h">${nice(d.k)}</div><b>${d.cum.toLocaleString()} XP</b> · LV ${levelOf(d.cum)}<br><span class="sub">+${d.xp} that day${d.pen ? ` · −${d.pen} penalty` : ""}</span>`);
   };
   hit.addEventListener("pointermove", move); hit.addEventListener("pointerdown", move);
   hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); hideTip(); });
@@ -863,7 +893,10 @@ function renderAwards() {
 let qdraft = [];
 function renderSettings() {
   $("p-name").value = D.profile.name || ""; $("p-goal").value = D.profile.goal || ""; $("p-dl").value = D.profile.deadline || "";
-  qdraft = structuredClone(D.quests); drawQEdit(); renderSyncInfo();
+  qdraft = structuredClone(D.quests); drawQEdit(); renderSyncInfo(); renderPush();
+  const n = { evening: "20:30", late: "22:30", morning: "09:00", ...(D.notify || {}) };
+  $("n-evening").value = n.evening; $("n-late").value = n.late; $("n-morning").value = n.morning; $("n-off").checked = !!n.off;
+  $("decayinfo").textContent = D.rules?.decayFrom ? `Penalties count from ${nice(D.rules.decayFrom)}. Earlier history isn't penalised.` : "Penalties start once you connect to your server.";
 }
 function drawQEdit() {
   $("qedit").innerHTML = qdraft.map((q, i) => q.archived ? "" : `<div class="qrow" data-i="${i}">
@@ -892,6 +925,51 @@ $("q-save").onclick = () => {
 $("p-save").onclick = () => {
   change({ op: "profile", name: $("p-name").value.trim() || "Hunter", goal: $("p-goal").value.trim(), deadline: $("p-dl").value });
   compute(); renderAll(); toast("Hunter profile saved.");
+};
+
+/* ---------- reminders (web push) ---------- */
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+async function pushSub() {
+  try {
+    const r = await Promise.race([navigator.serviceWorker?.ready, new Promise(res => setTimeout(() => res(null), 2000))]);
+    return await r?.pushManager?.getSubscription() || null;
+  } catch { return null; }
+}
+async function renderPush() {
+  const sub = await pushSub();
+  let msg;
+  if (!("PushManager" in window) || !("serviceWorker" in navigator)) msg = standalone ? "This phone can't receive web notifications (needs iOS 16.4 or newer)." : "Open Arise from your Home Screen to turn on reminders (iPhone only allows them there).";
+  else if (!syncCfg) msg = "Connect to your server first (Sync, below). The server sends the reminders.";
+  else if (Notification.permission === "denied") msg = "Notifications are blocked. Allow them in Settings → Notifications → Arise.";
+  else if (sub) msg = "<span class=\"syncdot ok\"></span>Reminders are on for this phone.";
+  else msg = "Get a notification when you're falling behind, and a morning report of any penalty.";
+  $("pushinfo").innerHTML = msg;
+  $("n-on").textContent = sub ? "Re-register this phone" : "Turn on reminders";
+}
+const u8 = b64 => Uint8Array.from(atob(b64.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((b64.length + 3) % 4)), c => c.charCodeAt(0));
+$("n-on").onclick = async () => {
+  if (!syncCfg) return toast("Connect to your server first.");
+  if (!("PushManager" in window)) return toast(standalone ? "This iOS version can't do web notifications." : "Open Arise from your Home Screen first.");
+  if (!base.vapid) { await sync(); if (!base.vapid) return toast("Server not reachable right now. Try again in a minute."); }
+  try {
+    if (await Notification.requestPermission() !== "granted") { renderPush(); return toast("Notifications weren't allowed."); }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(base.vapid) });
+    if (!syncCfg.url) await discover();
+    await call({ op: "pushsub", sub: sub.toJSON() });
+    await call({ op: "pushtest" });
+    toast("Reminders on. A test notification is on its way.");
+  } catch (e) { toast("Couldn't turn on reminders: " + (e.message || e)); }
+  renderPush();
+};
+$("n-test").onclick = async () => {
+  if (!syncCfg || !(await pushSub())) return toast("Turn on reminders first.");
+  try { if (!syncCfg.url) await discover(); await call({ op: "pushtest" }); toast("Test sent."); } catch { toast("Server not reachable right now."); }
+};
+$("n-save").onclick = () => {
+  change({ op: "notify", off: $("n-off").checked, evening: $("n-evening").value, late: $("n-late").value, morning: $("n-morning").value });
+  toast("Reminder times saved.");
 };
 
 /* ---------- sync ---------- */
@@ -1011,12 +1089,22 @@ $("ranges").onclick = e => {
   range = +b.dataset.r; document.querySelectorAll("#ranges button").forEach(x => x.classList.toggle("on", x === b));
   renderKpis(true); renderXp(); renderBars(); renderHeat(); renderRate(); renderWeek(); renderGrades();
 };
+// level drops happen when a day ends, so check whenever the app is opened or redrawn
+function checkDrop() {
+  const seen = store.get("hunter-seen", null);
+  store.set("hunter-seen", { level: G.level, rank: G.rank[0] });
+  if (!seen || $("ov").classList.contains("on")) return;
+  const order = RANKS.map(r => r[0]);
+  if (order.indexOf(G.rank[0]) > order.indexOf(seen.rank)) overlay("RANK DOWN", "Inconsistency has a price. Hunter rank lowered", G.rank[0], G.rank[2]);
+  else if (G.level < seen.level) overlay("LEVEL DOWN", `Missed days cost you XP. You fell from Level ${seen.level}`, G.level, "var(--bad)", seen.level);
+}
 function renderAll() {
   renderCard(); renderQuests();
   if (tab === "today") renderRadar();
   if (tab === "graphs") { renderKpis(); renderXp(); renderBars(); renderHeat(); renderRate(); renderWeek(); renderGrades(); }
   if (tab === "awards") renderAwards();
   if (tab === "set" && !document.activeElement?.closest("#t-set")) renderSettings();
+  checkDrop();
 }
 let lastDay = today();
 setInterval(() => {
@@ -1031,6 +1119,7 @@ setInterval(sync, 60000);
 // setup link: …/#setup=<code>
 const m = location.hash.match(/setup=([A-Za-z0-9_=-]+)/);
 if (m) { history.replaceState(null, "", location.pathname); connect(m[1]); }
+if (!base.rules?.decayFrom && !syncCfg) { base.rules = { decayFrom: today() }; store.set("hunter-data", base); }
 rebuild(); compute(); tickReset(); renderAll(); sync();
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").then(reg => {
