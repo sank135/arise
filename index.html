@@ -850,6 +850,7 @@ function renderAwards() {
     ["💪", "Iron Body", "One stat at 100", maxStat, 100],
     ["🧠", "Grand Sage", "One stat at 365", maxStat, 365],
     ["✨", "10,000 XP", "Earn 10,000 XP", G.xp, 10000],
+    ["🪷", "Nirvana", "365 full clears in a row: every quest, every day, for a year", fullRun, 365],
   ];
   // unlocked first, then the closest to unlocking
   list.sort((a, b) => (b[3] >= b[4]) - (a[3] >= a[4]) || (b[3] / b[4]) - (a[3] / a[4]));
